@@ -1,5 +1,6 @@
 # Use a lightweight Python 3.11 base image to keep the foundation small
 FROM python:3.11-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Set environment variables for better performance and logging
 ENV PYTHONDONTWRITEBYTECODE=1
