@@ -44,4 +44,9 @@ RUN playwright install chromium
 
 # 7. Finalize
 COPY . .
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]
+
+# DELETE THIS LINE:
+# CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "$PORT"]
+
+# ADD THIS LINE INSTEAD:
+CMD uvicorn src.main:app --host 0.0.0.0 --port $PORT
