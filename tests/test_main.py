@@ -1,2 +1,3 @@
-def test_health_check():
-    assert True  # This will make the pipeline turn Green ✅
+def test_health_check(client):
+    response = client.get("/health")
+    assert response.json()["status"] == "healthy"
