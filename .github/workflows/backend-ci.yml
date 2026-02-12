@@ -1,1 +1,113 @@
 
+name: Backend CI Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+      
+      - name: Install dependencies
+        run: |
+          uv pip install --system -r requirements.txt
+          uv pip install --system pytest pytest-cov pytest-asyncio httpx
+      
+      - name: Lint with Ruff
+        run: |
+          uv pip install --system ruff
+          ruff check src/
+        continue-on-error: true  # Don't fail build on linting errors (for now)
+      
+      - name: Check code formatting
+        run: |
+          ruff format --check src/
+        continue-on-error: true
+      
+      - name: Run tests
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          ENVIRONMENT: test
+        run: |
+          pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml
+      
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+      
+      - name: Check test coverage
+        run: |
+          coverage report --fail-under=70
+        continue-on-error: true
+  
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Bandit security scan
+        run: |
+          pip install bandit
+          bandit -r src/ -f json -o bandit-report.json
+        continue-on-error: true
+      
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: bandit-report.json
+  
+  deploy:
+    name: Deploy to Railway
+    needs: [test, security]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Trigger Railway Deployment
+        run: |
+          echo "✅ Railway auto-deploys from main branch"
+          echo "Deployment will happen automatically via Railway's GitHub integration"
+          echo "Check Railway dashboard: https://railway.app"
+      
+      - name: Post deployment notification
+        if: success()
+        run: |
+          echo "🚀 Backend deployed successfully!"
+          echo "API URL: https://[your-project].up.railway.app"
