@@ -57,7 +57,8 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           ENVIRONMENT: test
         run: |
-          pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml
+          # Use 'python -m pytest' to ensure the current directory is in PYTHONPATH
+          python -m pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml
       
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
