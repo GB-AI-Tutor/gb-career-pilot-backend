@@ -5,7 +5,7 @@ __pycache__/
 venv/
 env/
 .env
-
+.lock
 # IDE
 .vscode/
 .idea/

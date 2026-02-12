@@ -6,7 +6,7 @@ FastAPI backend with Groq AI integration for university guidance.
 
 1. Create virtual environment:
 ```bash
-uv init # Windows
+python -m pip install uv # Windows
 ```
 
 2. Install dependencies:
