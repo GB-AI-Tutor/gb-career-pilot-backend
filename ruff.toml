@@ -1,6 +1,6 @@
 # Ruff Configuration
 # File: ruff.toml (place in backend repo root)
-
+[lint]
 # Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
 select = [
     "E",  # pycodestyle errors
