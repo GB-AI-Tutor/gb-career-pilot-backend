@@ -29,7 +29,7 @@ async def root():
         "Status" : "Healthy",
         "version": "0.1.0"
     }
-    
+
 
 @app.get("/health")
 async def health_check():
