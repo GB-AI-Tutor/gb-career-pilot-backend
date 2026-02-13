@@ -6,6 +6,5 @@ def test_add_numbers():
     assert add_number(4,3) == 7
     assert add_number(3,3) == 6
     assert add_number(1,3) == 4
-    
-    
-    
+
+
