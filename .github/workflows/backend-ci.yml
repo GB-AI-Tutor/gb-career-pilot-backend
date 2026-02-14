@@ -32,8 +32,13 @@ jobs:
       
       - name: Install dependencies
         run: |
-          uv pip install httpx==0.27.2 httpcore==1.0.5
+          # 1. Force the correct networking library versions first
+          uv pip install httpx==0.27.2 httpcore==1.0.5 --force-reinstall
+          
+          # 2. Install your project requirements
           uv pip install -r requirements.txt
+          
+          # 3. Ensure test tools are ready
           uv pip install pytest pytest-cov pytest-asyncio
           
       - name: Lint with Ruff
