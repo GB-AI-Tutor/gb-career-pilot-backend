@@ -1,65 +1,75 @@
 # src/routers/universities.py
-from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
+
+from fastapi import APIRouter, HTTPException, Query, Depends
+from typing import Optional
 import os
 from supabase import create_client, Client
+from functools import lru_cache
 
 router = APIRouter()
 
-# Initialize Supabase client
-supabase: Client = create_client(
-    os.getenv("SUPABASE_URL"),
-    os.getenv("SUPABASE_SERVICE_KEY")
-)
+
+@lru_cache
+def get_supabase_client() -> Client:
+    return create_client(
+        os.getenv("SUPABASE_URL"),
+        os.getenv("SUPABASE_SERVICE_KEY")
+    )
+
 
 @router.get("/universities")
 async def get_universities(
     limit: int = Query(10, ge=1, le=100),
-    offset: int = Query(0, ge=0)
+    offset: int = Query(0, ge=0),
+    supabase: Client = Depends(get_supabase_client)
 ):
-    """Get list of universities with pagination"""
     try:
-        response = supabase.table('universities') \
-            .select('*') \
-            .range(offset, offset + limit - 1) \
+        response = (
+            supabase.table("universities")
+            .select("*")
+            .range(offset, offset + limit - 1)
             .execute()
-        
+        )
+
         return {
             "data": response.data,
             "count": len(response.data),
             "limit": limit,
-            "offset": offset
+            "offset": offset,
         }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/universities/search")
 async def search_universities(
     name: Optional[str] = None,
     city: Optional[str] = None,
-    max_cost: Optional[int] = None
+    max_cost: Optional[int] = None,
+    supabase: Client = Depends(get_supabase_client)
 ):
-    """Search universities by criteria"""
     try:
-        query = supabase.table('universities').select('*')
-        
+        query = supabase.table("universities").select("*")
+
         if name:
-            query = query.eq('name', name)
+            query = query.eq("name", name)
         if city:
-            query = query.eq('city', city)
+            query = query.eq("city", city)
         if max_cost:
-            query = query.lte('tuition_fee', max_cost)
-        
+            query = query.lte("tuition_fee", max_cost)
+
         response = query.execute()
-        
+
         return {
             "data": response.data,
             "count": len(response.data),
             "filters": {
                 "name": name,
                 "city": city,
-                "max_cost": max_cost
-            }
+                "max_cost": max_cost,
+            },
         }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
