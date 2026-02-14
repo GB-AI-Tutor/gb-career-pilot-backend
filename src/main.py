@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from src.routers import universities
 
 app = FastAPI(
     title ="GB Career Pilot API",
@@ -36,3 +37,8 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status":"healthy"}
+
+
+
+# Register router
+app.include_router(universities.router, prefix="/api", tags=["universities"])
