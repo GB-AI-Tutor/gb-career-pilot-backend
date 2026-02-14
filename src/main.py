@@ -13,7 +13,7 @@ origins = [
     "http://localhost:5173",
     "https://gb-ai-tutor.vercel.app",
     "https://gb-career-pilot-frontend.vercel.app",
-    "https://gb-career-pilot-frontend-bcybje4i4-raeesraqeebs-projects.vercel.app"
+    "https://gb-career-pilot-frontend-.*\.vercel\.app"
 ]
 
 
