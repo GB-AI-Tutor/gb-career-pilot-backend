@@ -32,7 +32,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          uv pip install httpx==0.27.2 httpcore==0.18.0
+          uv pip install httpx==0.27.2 httpcore==1.0.5
           uv pip install -r requirements.txt
           uv pip install pytest pytest-cov pytest-asyncio
           
