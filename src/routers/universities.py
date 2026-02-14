@@ -11,6 +11,13 @@ router = APIRouter()
 
 @lru_cache
 def get_supabase_client() -> Client:
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_SERVICE_KEY")
+    
+    if not url or not key:
+        print("❌ ERROR: Supabase environment variables are MISSING!")
+    else:
+        print(f"✅ Supabase URL found: {url[:10]}...") # Only print first 10 chars for security
     return create_client(
         os.getenv("SUPABASE_URL"),
         os.getenv("SUPABASE_SERVICE_KEY")
@@ -41,7 +48,16 @@ async def get_universities(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
+@router.get("/supabase-ping")
+async def ping_supabase(supabase: Client = Depends(get_supabase_client)):
+    try:
+        # This checks the health of the Supabase PostgREST server
+        # It doesn't query a table; it just asks the server if it's awake.
+        response = supabase.auth.get_session() 
+        return {"status": "Supabase Connection Healthy", "details": "Auth service responded."}
+    except Exception as e:
+        return {"status": "Supabase Connection Failed", "error": str(e)}
+        
 @router.get("/universities/search")
 async def search_universities(
     name: Optional[str] = None,
@@ -53,23 +69,21 @@ async def search_universities(
         query = supabase.table("universities").select("*")
 
         if name:
-            query = query.eq("name", name)
+            # ilike allows for case-insensitive partial matches (e.g., 'Fast' matches 'FAST NUCES')
+            query = query.ilike("name", f"%{name}%") 
         if city:
             query = query.eq("city", city)
-        if max_cost:
-            query = query.lte("country", country)
+        if country:
+            # Use .eq() for text. .lte() only works on numbers
+            query = query.eq("country", country) 
 
         response = query.execute()
-
         return {
             "data": response.data,
             "count": len(response.data),
-            "filters": {
-                "name": name,
-                "city": city,
-                "country": country,
-            },
+            "filters": {"name": name, "city": city, "country": country},
         }
-
     except Exception as e:
+        # This will print the exact reason for failure in your Railway logs
+        print(f"🔥 Supabase Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
