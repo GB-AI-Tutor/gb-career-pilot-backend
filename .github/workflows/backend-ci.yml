@@ -32,8 +32,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          # 1. Force the correct networking library versions first
-          uv pip install httpx==0.27.2 httpcore==1.0.5 --force-reinstall
+         
           
           # 2. Install your project requirements
           uv pip install -r requirements.txt
