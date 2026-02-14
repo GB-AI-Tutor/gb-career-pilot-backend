@@ -5,15 +5,25 @@ from typing import Optional
 import os
 from supabase import create_client, Client
 from functools import lru_cache
+from dotenv import load_dotenv
+from pathlib import Path
+# from src.database import supabase
+env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+
+# 2. Load the .env file explicitly
+load_dotenv(dotenv_path=env_path)
 
 router = APIRouter()
 
 
+# getting Supabase
 @lru_cache
 def get_supabase_client() -> Client:
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_SERVICE_KEY")
-    
+    print(url)
+    print("*******************")
+    print(key)
     if not url or not key:
         print("❌ ERROR: Supabase environment variables are MISSING!")
     else:
@@ -22,6 +32,13 @@ def get_supabase_client() -> Client:
         os.getenv("SUPABASE_URL"),
         os.getenv("SUPABASE_SERVICE_KEY")
     )
+
+@router.get("/api/universities")
+async def get_all_universities():
+    # This is the actual call to Supabase!
+    supabase: Client = Depends(get_supabase_client)
+    response = supabase.table("universities").select("*").execute()
+    return response.data
 
 
 @router.get("/universities")

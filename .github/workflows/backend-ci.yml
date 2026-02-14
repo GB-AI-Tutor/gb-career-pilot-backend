@@ -54,7 +54,11 @@ jobs:
       - name: Run tests
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+<<<<<<< HEAD
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+=======
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+>>>>>>> a8070aa (Update backend-ci for supa kay name)
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           ENVIRONMENT: test
           PYTHONPATH: .
