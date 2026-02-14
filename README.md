@@ -32,3 +32,6 @@ uvicorn src.main:app --reload
 API docs: http://localhost:8000/docs
 
 ## Project Structure
+
+
+## Testing 
