@@ -22,23 +22,19 @@ jobs:
           python-version: '3.11'
       
       - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-      
-      - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: astral-sh/setup-uv@v5
         with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-
+          enable-cache: true # Speed up your 9-person team's builds!
+      
+      - name: Set up Python
+        run: uv python install 3.11
       
       - name: Install dependencies
         run: |
+          # No need for --system if you let uv manage the environment
           uv pip install httpx==0.27.2 httpcore==0.18.0
-          uv pip install --system -r requirements.txt
-          uv pip install --system pytest pytest-cov pytest-asyncio httpx
+          uv pip install -r requirements.txt
+          uv pip install pytest pytest-cov pytest-asyncio
       
       - name: Lint with Ruff
         run: |
