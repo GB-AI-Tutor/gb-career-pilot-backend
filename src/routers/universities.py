@@ -46,7 +46,7 @@ async def get_universities(
 async def search_universities(
     name: Optional[str] = None,
     city: Optional[str] = None,
-    max_cost: Optional[int] = None,
+    country: Optional[str] = None,
     supabase: Client = Depends(get_supabase_client)
 ):
     try:
@@ -57,7 +57,7 @@ async def search_universities(
         if city:
             query = query.eq("city", city)
         if max_cost:
-            query = query.lte("tuition_fee", max_cost)
+            query = query.lte("country", country)
 
         response = query.execute()
 
@@ -67,7 +67,7 @@ async def search_universities(
             "filters": {
                 "name": name,
                 "city": city,
-                "max_cost": max_cost,
+                "country": country,
             },
         }
 
