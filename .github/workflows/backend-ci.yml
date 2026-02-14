@@ -31,7 +31,6 @@ jobs:
       
       - name: Install dependencies
         run: |
-          # No need for --system if you let uv manage the environment
           uv pip install httpx==0.27.2 httpcore==0.18.0
           uv pip install -r requirements.txt
           uv pip install pytest pytest-cov pytest-asyncio
@@ -53,10 +52,10 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           ENVIRONMENT: test
+          PYTHONPATH: .
         run: |
           # Use 'python -m pytest' to ensure the current directory is in PYTHONPATH
-          python -m pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml
-      
+          uv run pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         with:

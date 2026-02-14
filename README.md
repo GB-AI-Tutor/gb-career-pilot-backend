@@ -16,6 +16,9 @@ uv pip install torch torchvision torchaudio --index-url https://download.pytorch
 
 # 2. Now install the rest of your requirements
 uv pip install -r requirements.txt
+
+# For local key accessing from .env
+uv pip install python-dotenv
 ```
 
 3. Copy environment variables:
