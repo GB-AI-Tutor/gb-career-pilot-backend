@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "ms-python.python",              // Core Python support
+    "ms-python.vscode-pylance",      // Fast, type-aware IntelliSense
+    "charliermarsh.ruff",            // Mandatory: Matches your CI/CD linting
+    "njpwerner.autodocstring",       // Auto-generates docstrings for Llama models
+    "ms-toolsai.jupyter",            // For testing AI prompts in notebooks
+    "irongeek.vscode-env",           // For managing Supabase/Groq .env files
+    "ckotzbauer.gitleaks",           // Security: Prevents pushing API keys
+    "mtxr.sqltools",                 // Database: Connect to Supabase/PostgreSQL
+    "mtxr.sqltools-driver-pg"        // PostgreSQL driver for SQLTools
+  ]
+}

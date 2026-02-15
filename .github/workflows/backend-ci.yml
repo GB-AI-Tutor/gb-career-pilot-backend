@@ -1,9 +1,16 @@
 
 name: Backend CI Tests
 
+# .github/workflows/frontend-ci.yml
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'vite.config.ts'
+      - '.github/workflows/frontend-ci.yml'
   pull_request:
     branches: [ main ]
 
@@ -11,46 +18,46 @@ jobs:
   test:
     name: Test Backend
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
-      
+
       - name: Set up Python
         run: uv python install 3.11
-      
+
       - name: Create Virtual Environment
-        run: uv venv  
-      
+        run: uv venv
+
       - name: Install dependencies
         run: |
-         
-          
+
+
           # 2. Install your project requirements
           uv pip install -r requirements.txt
-          
+
           # 3. Ensure test tools are ready
           uv pip install pytest pytest-cov pytest-asyncio
-          
+
       - name: Lint with Ruff
         run: |
           uv pip install --system ruff
           ruff check src/
         continue-on-error: true  # Don't fail build on linting errors (for now)
-      
+
       - name: Check code formatting
         run: |
           ruff format --check src/
         continue-on-error: true
-      
+
       - name: Run tests
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -60,6 +67,8 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 >>>>>>> a8070aa (Update backend-ci for supa kay name)
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL}}
+          UPSTASH_REDIS_TOKEN: ${{secrets.UPSTASH_REDIS_TOKEN}}
           ENVIRONMENT: test
           PYTHONPATH: .
         run: |
@@ -70,48 +79,48 @@ jobs:
         with:
           files: ./coverage.xml
           fail_ci_if_error: false
-      
+
       - name: Check test coverage
         run: |
           coverage report --fail-under=70
         continue-on-error: true
-  
+
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Run Bandit security scan
         run: |
           pip install bandit
           bandit -r src/ -f json -o bandit-report.json
         continue-on-error: true
-      
+
       - name: Upload security report
         uses: actions/upload-artifact@v4
         with:
           name: security-report
           path: bandit-report.json
-  
+
   deploy:
     name: Deploy to Railway
     needs: [test, security]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Trigger Railway Deployment
         run: |
           echo "✅ Railway auto-deploys from main branch"
           echo "Deployment will happen automatically via Railway's GitHub integration"
           echo "Check Railway dashboard: https://railway.app"
-      
+
       - name: Post deployment notification
         if: success()
         run: |
