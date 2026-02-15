@@ -11,9 +11,6 @@ on:
       - 'package.json'
       - 'vite.config.ts'
       - '.github/workflows/frontend-ci.yml'
-    paths-ignore:
-      - 'docs/**'
-      - 'README.md'
   pull_request:
     branches: [ main ]
 
