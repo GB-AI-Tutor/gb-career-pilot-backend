@@ -1,0 +1,14 @@
+.
+├── __init__.py
+├── main.py
+├── __pycache__
+│   ├── __init__.cpython-312.pyc
+│   └── main.cpython-312.pyc
+├── routers
+│   ├── __pycache__
+│   │   └── universities.cpython-312.pyc
+│   └── universities.py
+├── src.txt
+└── test_sample.py
+
+4 directories, 8 files

@@ -1,0 +1,18 @@
+{
+  "python.defaultInterpreterPath": ".venv/bin/python",
+  "python.terminal.activateEnvInSelectedTerminal": true,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.ruff": "always",
+    "source.organizeImports.ruff": "always"
+  },
+  "editor.defaultFormatter": "ms-python.python",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.python",
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "always",
+      "source.organizeImports": "always"
+    }
+  },
+  "ruff.nativeServer": true
+}
