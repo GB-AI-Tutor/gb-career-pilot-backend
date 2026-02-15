@@ -66,6 +66,8 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL}}
+          UPSTASH_REDIS_TOKEN: ${{secrets.UPSTASH_REDIS_TOKEN}}
           ENVIRONMENT: test
           PYTHONPATH: .
         run: |
