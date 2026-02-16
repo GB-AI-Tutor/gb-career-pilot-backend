@@ -1,16 +1,15 @@
 
 name: Backend CI Tests
 
-# .github/workflows/frontend-ci.yml
 on:
   push:
     branches: [main]
     paths:
       - 'src/**'
-      - 'public/**'
-      - 'package.json'
-      - 'vite.config.ts'
-      - '.github/workflows/frontend-ci.yml'
+      - 'tests/**'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - '.github/workflows/backend-ci.yml'
   pull_request:
     branches: [ main ]
 
