@@ -20,6 +20,8 @@ upstash-redis==0.15.0
 playwright==1.42.0
 
 python-jose[cryptography]==3.3.0
+# Update this line in your requirements.txt
+bcrypt==4.0.1
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
 
@@ -29,3 +31,5 @@ aiofiles==23.2.1
 pytest==8.0.2
 pytest-asyncio==0.23.5
 
+# Authentication - FIXED
+pyjwt==2.8.0

@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.routers import universities
+
+from src.routers import auth, universities
 
 app = FastAPI(
-    title ="GB Career Pilot API",
+    title="GB Career Pilot API",
     description="AI-powered university guidance",
-    version ="0.1.0"
+    version="0.1.0",
 )
 
 
@@ -13,7 +14,7 @@ origins = [
     "http://localhost:5173",
     "https://gb-ai-tutor.vercel.app",
     "https://gb-career-pilot-frontend.vercel.app",
-    "https://gb-career-pilot-frontend-.*\.vercel\.app"
+    r"https://gb-career-pilot-frontend-.*\.vercel\.app",
 ]
 
 
@@ -28,18 +29,14 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {
-        "message":"GB Career Pilot API",
-        "Status" : "Healthy",
-        "version": "0.1.0"
-    }
+    return {"message": "GB Career Pilot API", "Status": "Healthy", "version": "0.1.0"}
 
 
 @app.get("/health")
 async def health_check():
-    return {"status":"healthy"}
-
+    return {"status": "healthy"}
 
 
 # Register router
 app.include_router(universities.router, prefix="/api", tags=["universities"])
+app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])  # ADD THIS
