@@ -47,6 +47,15 @@ def universites_data():
 
     return universites_data
 
+
+@app.get("/users")
+def users():
+    data = get_supabase_client()
+    response = data.table("users").select("*").execute()
+    users = response.data
+
+    return users
+
     # Register router
 
 
