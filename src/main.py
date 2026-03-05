@@ -1,6 +1,7 @@
-from database import database
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from .database.database import get_supabase_client
 
 # from routers import auth, universities
 
@@ -40,7 +41,7 @@ async def health_check():
 
 @app.get("/universities")
 def universites_data():
-    data = database.get_supabase_client()
+    data = get_supabase_client()
     response = data.table("universities").select("*").execute()
     universites_data = response.data
 
