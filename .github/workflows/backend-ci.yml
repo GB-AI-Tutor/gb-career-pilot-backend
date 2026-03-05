@@ -35,11 +35,11 @@ jobs:
         run: uv python install 3.11
 
       - name: Create Virtual Environment
-        working-directory: ./gb-career-pilot-backend
+        working-directory: .
         run: uv venv
 
       - name: Install dependencies
-        working-directory: ./gb-career-pilot-backend
+        working-directory: .
         run: |
 
 
@@ -50,20 +50,20 @@ jobs:
           uv pip install pytest pytest-cov pytest-asyncio
 
       - name: Lint with Ruff
-        working-directory: ./gb-career-pilot-backend
+        working-directory: .
         run: |
           uv pip install --system ruff
           ruff check src/
         continue-on-error: true  # Don't fail build on linting errors (for now)
 
       - name: Check code formatting
-        working-directory: ./gb-career-pilot-backend
+        working-directory: .
         run: |
           ruff format --check src/
         continue-on-error: true
 
       - name: Run tests
-        working-directory: ./gb-career-pilot-backend
+        working-directory: .
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
@@ -82,7 +82,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Check test coverage
-        working-directory: ./gb-career-pilot-backend
+        working-directory: .
         run: |
           coverage report --fail-under=70
         continue-on-error: true
@@ -96,7 +96,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Bandit security scan
-        working-directory: ./gb-career-pilot-backend
+        working-directory: .
         run: |
           pip install bandit
           bandit -r src/ -f json -o bandit-report.json
