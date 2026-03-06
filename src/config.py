@@ -16,7 +16,11 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
-    model_config = SettingsConfigDict(env_file=str(ENV_FILE))
+
+    model_config = SettingsConfigDict(
+        env_file=str(ENV_FILE) if ENV_FILE.exists() else None,
+        extra="ignore",  # Ignore any extra environment variables
+    )
 
 
 settings = Settings()
