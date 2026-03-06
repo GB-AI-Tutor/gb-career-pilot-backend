@@ -21,6 +21,7 @@ origins = [
 ]
 
 
+# using Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
