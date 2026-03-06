@@ -67,13 +67,14 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL}}
           UPSTASH_REDIS_TOKEN: ${{secrets.UPSTASH_REDIS_TOKEN}}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           ENVIRONMENT: test
-          PYTHONPATH: .
+          PYTHONPATH: ${{ github.workspace }}
         run: |
-          # Use 'python -m pytest' to ensure the current directory is in PYTHONPATH
           uv run pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
