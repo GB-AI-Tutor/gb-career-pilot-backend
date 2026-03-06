@@ -1,0 +1,22 @@
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Get the path to the .env file in the parent directory (backend root)
+ENV_FILE = Path(__file__).parent.parent / ".env"
+
+
+class Settings(BaseSettings):
+    SUPABASE_URL: str
+    SUPABASE_SERVICE_KEY: str
+    SUPABASE_PUBLISHABLE_KEY: str
+    GROQ_API_KEY: str
+    UPSTASH_REDIS_URL: str
+    UPSTASH_REDIS_TOKEN: str
+    JWT_SECRET_KEY: str
+    ENVIRONMENT: str = "development"
+    DEBUG: bool = False
+    model_config = SettingsConfigDict(env_file=str(ENV_FILE))
+
+
+settings = Settings()

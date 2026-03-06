@@ -1,7 +1,6 @@
+from database.database import get_supabase_client
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from .database.database import get_supabase_client
 
 # from routers import auth, universities
 
