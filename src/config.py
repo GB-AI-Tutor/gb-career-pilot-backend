@@ -10,13 +10,11 @@ class Settings(BaseSettings):
     # Required fields (actively used)
     SUPABASE_URL: str
     SUPABASE_SERVICE_KEY: str
-
-    # Optional fields (for future features)
-    SUPABASE_PUBLISHABLE_KEY: str = ""
-    GROQ_API_KEY: str = ""
-    UPSTASH_REDIS_URL: str = ""
-    UPSTASH_REDIS_TOKEN: str = ""
-    JWT_SECRET_KEY: str = "your-secret-key"
+    SUPABASE_PUBLISHABLE_KEY: str
+    GROQ_API_KEY: str
+    UPSTASH_REDIS_URL: str
+    UPSTASH_REDIS_TOKEN: str
+    JWT_SECRET_KEY: str
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
 
