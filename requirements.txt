@@ -34,3 +34,4 @@ pytest-asyncio==0.23.5
 # Authentication - FIXED
 pyjwt==2.8.0
 pydantic[email]
+pydantic_settings==2.13.1
