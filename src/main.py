@@ -1,9 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.v1.router import api_router
 from src.database.database import get_supabase_client
-
-# from routers import auth, universities
 
 app = FastAPI(
     title="GB Career Pilot API",
@@ -50,16 +49,17 @@ def universites_data():
     return universites_data
 
 
-@app.get("/users")
-def users():
-    data = get_supabase_client()
-    response = data.table("users").select("*").execute()
-    users = response.data
+# @app.get("/users")
+# def users():
+#     data = get_supabase_client()
+#     response = data.table("users").select("*").execute()
+#     users = response.data
 
-    return users
+#     return users
 
-    # Register router
+# Register router
 
 
+app.include_router(api_router, prefix="/api/v1")
 # app.include_router(universities.router, prefix="/api", tags=["universities"])
 # app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])  # ADD THIS
