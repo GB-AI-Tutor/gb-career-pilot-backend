@@ -12,6 +12,7 @@ app = FastAPI(
 )
 
 
+# Origins which are allowed to access backend API
 origins = [
     "http://localhost:5173",
     "https://gb-ai-tutor.vercel.app",
