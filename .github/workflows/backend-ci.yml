@@ -11,6 +11,8 @@ on:
       - 'package.json'
       - 'vite.config.ts'
       - '.github/workflows/frontend-ci.yml'
+      - '.github/workflows/backend-ci.yml'
+
   pull_request:
     branches: [ main ]
 
