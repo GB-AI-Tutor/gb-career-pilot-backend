@@ -76,6 +76,7 @@ jobs:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
           PROJECT_EMAIL: ${{ secrets.PROJECT_EMAIL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD}}
           ALGORITHM : ${{ secrets.ALGORITHM}}
 
