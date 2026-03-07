@@ -10,6 +10,7 @@ dependencies = [
     "pydantic-settings>=2.13.1",
     "pydantic[email]>=2.12.5",
     "pyjwt==2.8.0",
+    "resend>=2.23.0",
 ]
 
 [tool.mypy]

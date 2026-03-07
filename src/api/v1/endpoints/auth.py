@@ -1,9 +1,9 @@
-import smtplib
+import logging
 import uuid
 from datetime import UTC, datetime, timedelta
-from email.message import EmailMessage
 
 import jwt
+import resend  # pip install resend
 from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, status
 
@@ -22,22 +22,19 @@ router = APIRouter()
 def send_verification_email(receiver_email: str, token: str):
     verification_link = f"{settings.FRONTEND_URL}/verify?token={token}"
 
-    msg = EmailMessage()
-    msg.set_content(
-        f"Welcome! Please click the following link to verify your email and complete your registration:\n\n{verification_link}"
-    )
-    msg["Subject"] = "Verify your account"
-    msg["From"] = settings.PROJECT_EMAIL
-    msg["To"] = receiver_email
+    resend.api_key = settings.RESEND_API_KEY
 
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login(settings.PROJECT_EMAIL, settings.EMAIL_APP_PASSWORD)
-            smtp.send_message(msg)
+        resend.Emails.send({
+            "from": "GB Career Pilot <noreply@yourdomain.com>",
+            "to": receiver_email,
+            "subject": "Verify your account",
+            "text": f"Welcome! Please click the following link to verify your email:\n\n{verification_link}",
+        })
     except Exception as e:
-        logging.error(f"Failed to send email to {receiver_email}: {type(e).__name__}: {e}")
-        logging.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Failed to send verification mail: {type(e).__name__}: {str(e)}") from e
+        logging.error(f"Failed to send email: {type(e).__name__}: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to send verification mail") from e
 
 
 @router.get("/GetUserData")
@@ -54,7 +51,8 @@ def register_user(body: UserRegister):
     client = database.get_supabase_client()
 
     # handling duplicate emails
-    existing_user = client.table("users").select("email").eq("email", body.email).execute()
+    existing_user = client.table("users").select(
+        "email").eq("email", body.email).execute()
 
     if existing_user.data:
         # 409 Conflict is the industry standard for duplicate data
@@ -84,9 +82,11 @@ def register_user(body: UserRegister):
         **body.model_dump(exclude={"password_hash"}),
     }
 
-    payload = {"user_data": user_data, "exp": datetime.now(UTC) + timedelta(minutes=15)}
+    payload = {"user_data": user_data,
+               "exp": datetime.now(UTC) + timedelta(minutes=15)}
 
-    token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.ALGORITHM)
+    token = jwt.encode(payload, settings.JWT_SECRET_KEY,
+                       algorithm=settings.ALGORITHM)
 
     send_verification_email(body.email, token)
 
@@ -124,7 +124,8 @@ def verify_registration(token: str):
 
     try:
         # 1. Decode token. Automatically throws error if expired or tampered with.
-        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY,
+                             algorithms=[settings.ALGORITHM])
         user_data = payload.get("user_data")
 
         # 2. Finally, insert the verified data into Supabase

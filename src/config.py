@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     PROJECT_EMAIL: str
     EMAIL_APP_PASSWORD: str
     ALGORITHM: str
+    RESEND_API_KEY: str
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
 
