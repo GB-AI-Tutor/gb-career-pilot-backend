@@ -11,8 +11,6 @@ from src.config import settings
 from src.database import database
 from src.schemas.users import UserRegister
 from src.utils.security import get_password_hash
-import logging
-import traceback
 
 load_dotenv()
 
@@ -25,16 +23,17 @@ def send_verification_email(receiver_email: str, token: str):
     resend.api_key = settings.RESEND_API_KEY
 
     try:
-        resend.Emails.send({
-            "from": "GB Career Pilot <noreply@yourdomain.com>",
-            "to": receiver_email,
-            "subject": "Verify your account",
-            "text": f"Welcome! Please click the following link to verify your email:\n\n{verification_link}",
-        })
+        resend.Emails.send(
+            {
+                "from": "GB Career Pilot <noreply@yourdomain.com>",
+                "to": receiver_email,
+                "subject": "Verify your account",
+                "text": f"Welcome! Please click the following link to verify your email:\n\n{verification_link}",
+            }
+        )
     except Exception as e:
         logging.error(f"Failed to send email: {type(e).__name__}: {e}")
-        raise HTTPException(
-            status_code=500, detail="Failed to send verification mail") from e
+        raise HTTPException(status_code=500, detail="Failed to send verification mail") from e
 
 
 @router.get("/GetUserData")
@@ -51,8 +50,7 @@ def register_user(body: UserRegister):
     client = database.get_supabase_client()
 
     # handling duplicate emails
-    existing_user = client.table("users").select(
-        "email").eq("email", body.email).execute()
+    existing_user = client.table("users").select("email").eq("email", body.email).execute()
 
     if existing_user.data:
         # 409 Conflict is the industry standard for duplicate data
@@ -82,11 +80,9 @@ def register_user(body: UserRegister):
         **body.model_dump(exclude={"password_hash"}),
     }
 
-    payload = {"user_data": user_data,
-               "exp": datetime.now(UTC) + timedelta(minutes=15)}
+    payload = {"user_data": user_data, "exp": datetime.now(UTC) + timedelta(minutes=15)}
 
-    token = jwt.encode(payload, settings.JWT_SECRET_KEY,
-                       algorithm=settings.ALGORITHM)
+    token = jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.ALGORITHM)
 
     send_verification_email(body.email, token)
 
@@ -124,8 +120,7 @@ def verify_registration(token: str):
 
     try:
         # 1. Decode token. Automatically throws error if expired or tampered with.
-        payload = jwt.decode(token, settings.JWT_SECRET_KEY,
-                             algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_data = payload.get("user_data")
 
         # 2. Finally, insert the verified data into Supabase
@@ -148,6 +143,6 @@ def verify_registration(token: str):
         ) from e
 
 
-@router.post("/login")
-def login_user():
-    pass
+# @router.post("/login")
+# def login_user():
+#     pass
