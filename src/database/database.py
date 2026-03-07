@@ -14,3 +14,7 @@ def get_supabase_client() -> Client:
         raise ValueError("Missing Supabase credentials")
 
     return create_client(url, key)
+
+
+def get_supabase_admin_client() -> Client:
+    return create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_KEY)
