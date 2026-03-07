@@ -144,9 +144,6 @@ def verify_registration(token: str):
         ) from e
 
 
-# @router.post("/login", response_model=Token)
-# def login_user(body: UserLogin):
-#     client = database.get_supabase_client()
-#     user = body.model_dump()
-#     hashed_password = get_password_hash(user['password'])
-#     status = verify_password(user['password'], hashed_password)
+@router.post("/login")
+def login_user():
+    pass
