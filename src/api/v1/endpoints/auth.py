@@ -11,6 +11,8 @@ from src.config import settings
 from src.database import database
 from src.schemas.users import UserRegister
 from src.utils.security import get_password_hash
+import logging
+import traceback
 
 load_dotenv()
 
@@ -33,8 +35,9 @@ def send_verification_email(receiver_email: str, token: str):
             smtp.login(settings.PROJECT_EMAIL, settings.EMAIL_APP_PASSWORD)
             smtp.send_message(msg)
     except Exception as e:
-        print(f"Failed to send email:{e}")
-        raise HTTPException(status_code=500, detail="Failed to send verification mail") from e
+        logging.error(f"Failed to send email to {receiver_email}: {type(e).__name__}: {e}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to send verification mail: {type(e).__name__}: {str(e)}") from e
 
 
 @router.get("/GetUserData")
