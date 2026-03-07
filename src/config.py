@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     UPSTASH_REDIS_URL: str
     UPSTASH_REDIS_TOKEN: str
     JWT_SECRET_KEY: str
+    FRONTEND_URL: str
+    PROJECT_EMAIL: str
+    EMAIL_APP_PASSWORD: str
+    ALGORITHM: str
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
 
