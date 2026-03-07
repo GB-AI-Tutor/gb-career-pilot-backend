@@ -72,8 +72,14 @@ jobs:
           UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL}}
           UPSTASH_REDIS_TOKEN: ${{secrets.UPSTASH_REDIS_TOKEN}}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          PROJECT_EMAIL: ${{ secrets.PROJECT_EMAIL }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD}}
+          ALGORITHM : ${{ secrets.ALGORITHM}}
+
           ENVIRONMENT: test
           PYTHONPATH: ${{ github.workspace }}
+
         run: |
           uv run pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml
       - name: Upload coverage reports
