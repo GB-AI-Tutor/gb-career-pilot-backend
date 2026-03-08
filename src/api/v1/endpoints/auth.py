@@ -1,11 +1,9 @@
 import logging
-import smtplib
 import uuid
 from datetime import UTC, datetime, timedelta
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 import jwt
+import resend
 from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, status
 
@@ -19,50 +17,51 @@ load_dotenv()
 router = APIRouter()
 
 
-def send_verification_email(receiver_email: str, token: str):
-    verification_link = f"{settings.FRONTEND_URL}/verify?token={token}"
-
-    # Build the email
-    message = MIMEMultipart("alternative")
-    message["Subject"] = "Verify your account - GB Career Pilot"
-    message["From"] = settings.PROJECT_EMAIL
-    message["To"] = receiver_email
-
-    text_content = f"Welcome! Click the link below to verify your email:\n\n{verification_link}"
-    message.attach(MIMEText(text_content, "plain"))
-
-    # Send via Gmail SMTP
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.ehlo()
-            server.starttls()  # encrypts the connection
-            server.ehlo()
-            server.login(settings.PROJECT_EMAIL, settings.EMAIL_APP_PASSWORD)
-            server.sendmail(settings.PROJECT_EMAIL, receiver_email, message.as_string())
-
-    except smtplib.SMTPException as e:
-        logging.error(f"Failed to send email: {e}")
-        raise HTTPException(status_code=500, detail="Failed to send verification mail") from e
-
-
-# #Resend for testing domain
 # def send_verification_email(receiver_email: str, token: str):
 #     verification_link = f"{settings.FRONTEND_URL}/verify?token={token}"
 
-#     resend.api_key = settings.RESEND_API_KEY  # add this to your .env
+#     # Build the email
+#     message = MIMEMultipart("alternative")
+#     message["Subject"] = "Verify your account - GB Career Pilot"
+#     message["From"] = settings.PROJECT_EMAIL
+#     message["To"] = receiver_email
 
+#     text_content = f"Welcome! Click the link below to verify your email:\n\n{verification_link}"
+#     message.attach(MIMEText(text_content, "plain"))
+
+#     # Send via Gmail SMTP
 #     try:
-#         resend.Emails.send(
-#             {
-#                 "from": "GB Career Pilot <onboarding@resend.dev>",  # free no-domain sender
-#                 "to": [receiver_email],
-#                 "subject": "Verify your account",
-#                 "text": f"Welcome! Please click the following link to verify your email:\n\n{verification_link}",
-#             }
-#         )
-#     except Exception as e:
+#         with smtplib.SMTP("smtp.gmail.com", 587) as server:
+#             server.ehlo()
+#             server.starttls()  # encrypts the connection
+#             server.ehlo()
+#             server.login(settings.PROJECT_EMAIL, settings.EMAIL_APP_PASSWORD)
+#             server.sendmail(settings.PROJECT_EMAIL, receiver_email, message.as_string())
+
+#     except smtplib.SMTPException as e:
 #         logging.error(f"Failed to send email: {e}")
 #         raise HTTPException(status_code=500, detail="Failed to send verification mail") from e
+
+
+# Resend for testing domain
+def send_verification_email(receiver_email: str, token: str):
+    verification_link = f"{settings.FRONTEND_URL}/verify?token={token}"
+
+    resend.api_key = settings.RESEND_API_KEY  # add this to your .env
+
+    try:
+        resend.Emails.send(
+            {
+                "from": "GB Career Pilot <onboarding@resend.dev>",  # free no-domain sender
+                "to": [receiver_email],
+                "subject": "Verify your account",
+                "text": f"Welcome! Please click the following link to verify your email:\n\n{verification_link}",
+            }
+        )
+    except Exception as e:
+        logging.error(f"Failed to send email: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send verification mail") from e
+
 
 #     # def send_verification_email(receiver_email: str, token: str):
 #     #     verification_link = f"{settings.FRONTEND_URL}/verify?token={token}"
