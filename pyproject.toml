@@ -11,6 +11,7 @@ dependencies = [
     "pydantic[email]>=2.12.5",
     "pyjwt==2.8.0",
     "resend>=2.23.0",
+    "sib-api-v3-sdk>=7.6.0",
 ]
 
 [tool.mypy]

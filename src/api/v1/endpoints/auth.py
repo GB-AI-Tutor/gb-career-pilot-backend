@@ -3,9 +3,10 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import jwt
-import resend  # pip install resend
+import sib_api_v3_sdk  # pip install sib-api-v3-sdk
 from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, status
+from sib_api_v3_sdk.rest import ApiException
 
 from src.config import settings
 from src.database import database
@@ -20,19 +21,22 @@ router = APIRouter()
 def send_verification_email(receiver_email: str, token: str):
     verification_link = f"{settings.FRONTEND_URL}/verify?token={token}"
 
-    resend.api_key = settings.RESEND_API_KEY
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key["api-key"] = settings.BREVO_API
+
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+
+    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+        to=[{"email": receiver_email}],
+        sender={"name": "GB Career Pilot", "email": settings.PROJECT_EMAIL},
+        subject="Verify your account",
+        text_content=f"Welcome! Please click the following link to verify your email and complete your registration:\n\n{verification_link}",
+    )
 
     try:
-        resend.Emails.send(
-            {
-                "from": "GB Career Pilot <noreply@yourdomain.com>",
-                "to": receiver_email,
-                "subject": "Verify your account",
-                "text": f"Welcome! Please click the following link to verify your email:\n\n{verification_link}",
-            }
-        )
-    except Exception as e:
-        logging.error(f"Failed to send email: {type(e).__name__}: {e}")
+        api_instance.send_transac_email(send_smtp_email)
+    except ApiException as e:
+        logging.error(f"Failed to send email: {e}")
         raise HTTPException(status_code=500, detail="Failed to send verification mail") from e
 
 

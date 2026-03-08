@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     EMAIL_APP_PASSWORD: str
     ALGORITHM: str
     RESEND_API_KEY: str
+    BREVO_API: str
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
 
