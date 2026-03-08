@@ -17,33 +17,8 @@ load_dotenv()
 router = APIRouter()
 
 
-# def send_verification_email(receiver_email: str, token: str):
-#     verification_link = f"{settings.FRONTEND_URL}/verify?token={token}"
-
-#     # Build the email
-#     message = MIMEMultipart("alternative")
-#     message["Subject"] = "Verify your account - GB Career Pilot"
-#     message["From"] = settings.PROJECT_EMAIL
-#     message["To"] = receiver_email
-
-#     text_content = f"Welcome! Click the link below to verify your email:\n\n{verification_link}"
-#     message.attach(MIMEText(text_content, "plain"))
-
-#     # Send via Gmail SMTP
-#     try:
-#         with smtplib.SMTP("smtp.gmail.com", 587) as server:
-#             server.ehlo()
-#             server.starttls()  # encrypts the connection
-#             server.ehlo()
-#             server.login(settings.PROJECT_EMAIL, settings.EMAIL_APP_PASSWORD)
-#             server.sendmail(settings.PROJECT_EMAIL, receiver_email, message.as_string())
-
-#     except smtplib.SMTPException as e:
-#         logging.error(f"Failed to send email: {e}")
-#         raise HTTPException(status_code=500, detail="Failed to send verification mail") from e
-
-
-# Resend for testing domain
+# Resend for testing domain using 1 year free domain
+# later we can convert it to something else
 def send_verification_email(receiver_email: str, token: str):
     verification_link = f"{settings.FRONTEND_URL}/verify?token={token}"
 
@@ -61,28 +36,6 @@ def send_verification_email(receiver_email: str, token: str):
     except Exception as e:
         logging.error(f"Failed to send email: {e}")
         raise HTTPException(status_code=500, detail="Failed to send verification mail") from e
-
-
-#     # def send_verification_email(receiver_email: str, token: str):
-#     #     verification_link = f"{settings.FRONTEND_URL}/verify?token={token}"
-
-#     #     configuration = sib_api_v3_sdk.Configuration()
-#     #     configuration.api_key["api-key"] = settings.BREVO_API
-
-#     #     api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
-
-#     #     send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-#     #         to=[{"email": receiver_email}],
-#     #         sender={"name": "GB Career Pilot", "email": settings.PROJECT_EMAIL},
-#     #         subject="Verify your account",
-#     #         text_content=f"Welcome! Please click the following link to verify your email and complete your registration:\n\n{verification_link}",
-#     #     )
-
-#     # try:
-#     #     api_instance.send_transac_email(send_smtp_email)
-#     # except ApiException as e:
-#     #     logging.error(f"Failed to send email: {e}")
-#     #     raise HTTPException(status_code=500, detail="Failed to send verification mail") from e
 
 
 @router.get("/GetUserData")
@@ -192,6 +145,6 @@ def verify_registration(token: str):
         ) from e
 
 
-# @router.post("/login")
-# def login_user():
-#     pass
+@router.post("/login")
+def login_user():
+    pass
