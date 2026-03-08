@@ -52,7 +52,7 @@ def send_verification_email(receiver_email: str, token: str):
     try:
         resend.Emails.send(
             {
-                "from": "GB Career Pilot <onboarding@resend.dev>",  # free no-domain sender
+                "from": "GB Career Pilot <no-reply@raqeebs.app>",  # free no-domain sender
                 "to": [receiver_email],
                 "subject": "Verify your account",
                 "text": f"Welcome! Please click the following link to verify your email:\n\n{verification_link}",
