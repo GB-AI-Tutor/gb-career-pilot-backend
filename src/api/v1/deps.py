@@ -20,10 +20,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(h
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # FIX: Ensure algorithms is a list [settings.ALGORITHM]
-        payload = decode_jwt_token(token)
-        # Token payload is {"user_data": {"sub": "...", "email": "..."}, "exp": ...}
-        user_data = payload.get("user_data", {})
+        # decode_jwt_token already returns the user_data dict: {"sub": ..., "email": ...}
+        user_data = decode_jwt_token(token)
         user_id: str = user_data.get("sub")
         if user_id is None:
             raise credentials_exception
