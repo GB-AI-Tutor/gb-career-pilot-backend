@@ -17,7 +17,8 @@ def register_user(body: UserRegister):
     client = database.get_supabase_client()
 
     # handling duplicate emails
-    existing_user = client.table("users").select("email").eq("email", body.email).execute()
+    existing_user = client.table("users").select(
+        "email").eq("email", body.email).execute()
 
     if existing_user.data:
         # 409 Conflict is the industry standard for duplicate data
