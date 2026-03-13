@@ -61,10 +61,12 @@ jobs:
           # OPTIONAL - Won't fail if missing
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           PROJECT_EMAIL: ${{ secrets.PROJECT_EMAIL }}
-          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
-          BREVO_API: ${{ secrets.BREVO_API }}
-          
-          # Test environment
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD}}
+          ALGORITHM : ${{ secrets.ALGORITHM}}
+          BREVO_API : ${{ secrets.BREVO_API}}
+          ACCESS_TOKE_TIME: ${{ vars.ACCESS_TOKE_TIME}}
+          REFRESH_ACCESS_TOKEN_TIME: ${{vars.REFRESH_ACCESS_TOKE_TIME}}
           ENVIRONMENT: test
           FRONTEND_URL: http://localhost:5173
           PYTHONPATH: ${{ github.workspace }}

@@ -20,9 +20,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(h
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # decode_jwt_token already returns the user_data dict: {"sub": ..., "email": ...}
-        user_data = decode_jwt_token(token)
-        user_id: str = user_data.get("sub")
+        payload = decode_jwt_token(token)
+
+        user_id = payload.get("sub")
+        print("*" * 20)
+        print(payload, " : Did we reach here?")
+        print("*" * 20)
         if user_id is None:
             raise credentials_exception
 
@@ -31,7 +34,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(h
 
     client = get_supabase_client()
 
-    # Using .single() is good, but let's handle the potential error
     try:
         response = client.table("users").select("*").eq("id", user_id).single().execute()
         if not response.data:
