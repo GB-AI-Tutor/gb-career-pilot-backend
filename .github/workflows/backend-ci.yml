@@ -80,6 +80,8 @@ jobs:
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD}}
           ALGORITHM : ${{ secrets.ALGORITHM}}
           BREVO_API : ${{ secrets.BREVO_API}}
+          ACCESS_TOKE_TIME: ${{ vars.ACCESS_TOKE_TIME}}
+          REFRESH_ACCESS_TOKEN_TIME: ${{vars.REFRESH_ACCESS_TOKE_TIME}}
           ENVIRONMENT: test
           PYTHONPATH: ${{ github.workspace }}
 

@@ -14,7 +14,10 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str
     UPSTASH_REDIS_URL: str
     UPSTASH_REDIS_TOKEN: str
+    ACCESS_TOKEN_TIME: int
+    REFRESH_ACCESS_TOKEN_TIME: int
     JWT_SECRET_KEY: str
+    JWT_REFRESH_SECRET_KEY: str
     FRONTEND_URL: str
     PROJECT_EMAIL: str
     EMAIL_APP_PASSWORD: str

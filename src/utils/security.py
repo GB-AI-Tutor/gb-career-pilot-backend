@@ -1,5 +1,5 @@
 import hashlib
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 import jwt
@@ -36,6 +36,19 @@ def create_access_token(data: dict, expires_date: datetime):
     }
 
     token = jwt.encode(payload, settings.JWT_SECRET_KEY, settings.ALGORITHM)
+    return token
+
+
+def create_refresh_access_token(
+    data: dict, expires_date: datetime = datetime.now(UTC) + timedelta(hours=150)
+):
+    payload = {
+        "user_data": data,
+        # we have to use exp otherwise json will not be able to serialize the datatime
+        "exp": expires_date,
+    }
+
+    token = jwt.encode(payload, settings.JWT_REFRESH_SECRET_KEY, settings.ALGORITHM)
     return token
 
 

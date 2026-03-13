@@ -4,13 +4,16 @@ from datetime import UTC, datetime, timedelta
 import jwt
 import resend
 from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from jwt import InvalidTokenError as JWTError
 
+from src.api.v1.deps import get_current_user
 from src.config import settings
 from src.database import database
 from src.schemas.users import UserLogin
 from src.utils.security import (
     create_access_token,
+    create_refresh_access_token,
     decode_jwt_token,
     verify_password,
 )
@@ -97,9 +100,75 @@ def login_user(body: UserLogin):
         "sub": str(response["id"]),
         "email": (response["email"]),
     }
-    expires_date = datetime.now(UTC) + timedelta(hours=10)
+    expires_date = datetime.now(UTC) + timedelta(hours=settings.ACCESS_TOKEN_TIME)
 
-    # generating JWT token
+    refresh_token_expires_date = datetime.now(UTC) + timedelta(
+        days=settings.REFRESH_ACCESS_TOKEN_TIME
+    )
+
+    # generating JWT token- this is for short time
     access_token = create_access_token(user_data, expires_date)
 
-    return {"access_token": access_token, "Token_type": "bearer"}
+    #  Long lived refresh token
+    refresh_token = create_refresh_access_token(user_data, refresh_token_expires_date)
+    client.table("users").update({"refresh_token": refresh_token}).eq(
+        "id", response["id"]
+    ).execute()
+
+    return {"access_token": access_token, "refresh_token": refresh_token, "Token_type": "bearer"}
+
+
+@router.post("/refresh")
+def refresh_access_token(refresh_token: str):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=" Could not validate the refresh token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(
+            refresh_token, settings.JWT_REFRESH_SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        data = payload.get("user_data")
+        user_id = data.get("sub")
+
+        # if user_id is None:
+        #     raise credentials_exception
+        print("*" * 20)
+        print("Payload", user_id)
+        print("*" * 20)
+
+        email = payload.get("email")
+
+    except JWTError as e:
+        raise credentials_exception from e
+
+    # checking user still exist
+    client = database.get_supabase_client()
+    response = (
+        client.table("users").select("id", "refresh_token").eq("id", user_id).single().execute()
+    )
+
+    if not response:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=" Student account not found"
+        )
+    refresh_token_db = response.data.get("refresh_token")
+
+    if refresh_token != refresh_token_db:
+        raise HTTPException(
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            detail=" User logout or refresh token time expired",
+        )
+
+    expire = datetime.now(UTC) + timedelta(hours=settings.ACCESS_TOKEN_TIME)
+    new_access_token = create_access_token({"sub": user_id, "email": email}, expire)
+
+    return {"access_token": new_access_token, "token_type": "bearer"}
+
+
+@router.post("/logout")
+def logout_user(current_user: dict = Depends(get_current_user)):
+    client = database.get_supabase_client()
+    client.table("users").update({"refresh_token": None}).eq("id", current_user["id"]).execute()
+    return {"Message": " Log out successfully."}
