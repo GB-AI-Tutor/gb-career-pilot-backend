@@ -1,19 +1,41 @@
+from datetime import UTC, datetime, timedelta
+from unittest.mock import MagicMock, patch
+
 from fastapi.testclient import TestClient
 
 from src.main import app
+from src.utils.security import create_access_token
 
 client = TestClient(app)
 
+FAKE_USER_ID = "fe4ad25e-b207-414a-8f4e-7d5a55daa3a6"
+FAKE_USER_EMAIL = "2022n00020@gmail.com"
+
+FAKE_USER = {
+    "id": FAKE_USER_ID,
+    "email": FAKE_USER_EMAIL,
+    "full_name": "Test User",
+}
+
 
 def test_get_me_success():
-    # 1. First, we need a real token. We can simulate a login or
-    # manually create a token using our utility.
-    token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2RhdGEiOnsic3ViIjoiZmU0YWQyNWUtYjIwNy00MTRhLThmNGUtN2Q1YTU1ZGFhM2E2IiwiZW1haWwiOiIyMDIybjAwMDIwQGdtYWlsLmNvbSJ9LCJleHAiOjE3NzMyOTA1MjZ9.n2L6mXL56eAuAh8vAVDcW7vjK0d_78uxI7dcGhmmrNc"
+    # 1. Generate a fresh token
+    user_data = {"sub": FAKE_USER_ID, "email": FAKE_USER_EMAIL}
+    expires = datetime.now(UTC) + timedelta(hours=1)
+    token = create_access_token(user_data, expires)
 
-    # 2. We hit the protected endpoint with the 'Authorization' header
-    response = client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {token}"})
+    # 2. Mock the Supabase DB call so CI doesn't need real credentials
+    mock_response = MagicMock()
+    mock_response.data = FAKE_USER
 
-    # 3. We check if it all integrated correctly
+    mock_client = MagicMock()
+    mock_client.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value = mock_response
+
+    with patch("src.api.v1.deps.get_supabase_client", return_value=mock_client):
+        # 3. Hit the protected endpoint
+        response = client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {token}"})
+
+    # 4. Assert
     assert response.status_code == 200
     assert "email" in response.json()
 
