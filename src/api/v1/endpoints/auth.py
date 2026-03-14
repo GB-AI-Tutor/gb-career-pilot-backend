@@ -84,7 +84,7 @@ def login_user(body: UserLogin):
     )
 
     # hash_passoword = get_password_hash(body.password)
-    if not exist:
+    if not exist.data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with {body.email} email not found. Kindly register first.",

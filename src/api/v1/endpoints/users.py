@@ -54,7 +54,7 @@ def register_user(body: UserRegister):
 
     send_verification_email(body.email, token)
 
-    return {"Message": " Verification mail has been send."}
+    return {"Message": " Verification mail has been send.", **user_data}
 
     #     try:
     #         response = (client.table("users").insert(user_data).execute())
