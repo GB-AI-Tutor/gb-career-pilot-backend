@@ -134,3 +134,28 @@ def get_university_by_name(name: str):
         program_data[i]["admission_requirement"] = dump
 
     return {"University": university.data, "Programs:": program_data}
+
+
+@router.get("/univeristy/{id}/programs")
+def programs_by_university(id: int, field: str):
+    client = get_supabase_admin_client()
+
+    programs = client.table("programs").select("*").eq("university_id", id).execute()
+    programs_data = programs.model_dump()
+    program_data = programs_data["data"]
+
+    print(program_data[0]["id"])
+
+    for i in range(0, len(program_data)):
+        admission_requirement = (
+            client.table("admission_requirements")
+            .select(
+                "matric_weightage,fsc_weightage,test_weightage,last_closing_aggregate,quota_category"
+            )
+            .eq("program_id", program_data[i]["id"])
+            .execute()
+        )
+        dump = admission_requirement.model_dump()["data"]
+        program_data[i]["admission_requirement"] = dump
+
+    return {"Programs": program_data}
