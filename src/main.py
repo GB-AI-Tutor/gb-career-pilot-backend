@@ -61,5 +61,6 @@ def universites_data():
 
 
 app.include_router(api_router, prefix="/api/v1")
+
 # app.include_router(universities.router, prefix="/api", tags=["universities"])
 # app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])  # ADD THIS
