@@ -48,9 +48,14 @@ class UniversityBase(BaseModel):
     name: Annotated[str, StringConstraints(to_lower=True)] = Field(
         ..., min_length=3, max_length=200
     )
-    city: str = Field(..., min_length=2, max_length=50)
+    city: Annotated[str, StringConstraints(to_lower=True)] = Field(..., min_length=2, max_length=50)
     sector: SectorEnum
     website: HttpUrl | None = None
+    ranking_national: int | None = None
+    qs_ranking_: int | None = None
+    founded_year: int | None = None
+    fee_per_semester: int | None = None
+    is_active: bool | None = None
     has_hostel: bool = False
     has_general_scholarships: bool = False
 
