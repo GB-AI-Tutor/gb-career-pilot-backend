@@ -67,6 +67,9 @@ jobs:
           BREVO_API : ${{ secrets.BREVO_API}}
           ACCESS_TOKE_TIME: ${{ vars.ACCESS_TOKE_TIME}}
           REFRESH_ACCESS_TOKEN_TIME: ${{vars.REFRESH_ACCESS_TOKE_TIME}}
+          
+          
+          # Test environment
           ENVIRONMENT: test
           FRONTEND_URL: http://localhost:5173
           PYTHONPATH: ${{ github.workspace }}
