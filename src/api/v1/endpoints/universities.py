@@ -1,9 +1,10 @@
 import math
 from enum import Enum
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from postgrest.types import CountMethod
 
+from src.api.v1.deps import get_current_user
 from src.database.database import get_supabase_admin_client
 from src.schemas.universities import UniversityCreate, UniversityUpdate
 
@@ -71,6 +72,7 @@ def get_universities(
     offset: int = 0,
     sort_by: UniversitySortField = UniversitySortField.ranking_national,
     order: str = "asc",
+    current_user: dict = Depends(get_current_user),
 ):
     is_desc = order.lower() == "desc"
     range_end = offset + limit - 1
@@ -101,7 +103,7 @@ def get_universities(
 
 
 @router.get("/get_university_by_name")
-def get_university_by_name(name: str):
+def get_university_by_name(name: str, current_user: dict = Depends(get_current_user)):
     client = get_supabase_admin_client()
 
     university = client.table("universities").select("").eq("name", name.lower()).execute()
@@ -136,8 +138,10 @@ def get_university_by_name(name: str):
     return {"University": university.data, "Programs:": program_data}
 
 
-@router.get("/univeristy/{id}/programs")
-def programs_by_university(id: int, field: str):
+@router.get(
+    "/univeristy/{id}/programs",
+)
+def programs_by_university(id: int, field: str, current_user: dict = Depends(get_current_user)):
     client = get_supabase_admin_client()
 
     programs = client.table("programs").select("*").eq("university_id", id).execute()
@@ -159,3 +163,105 @@ def programs_by_university(id: int, field: str):
         program_data[i]["admission_requirement"] = dump
 
     return {"Programs": program_data}
+
+
+class Sector(str, Enum):
+    Private = ("Private",)
+    Public = ("Public",)
+    Semi_Government = "Semi-Government"
+
+
+@router.get("/programs/search")
+def search_programs(
+    # student_percentage: float | None = None, # 👈 NEW: Optional student marks
+    quota_category: str = "Open Merit",  # 👈 NEW: Default to Open Merit
+    field: str | None = None,
+    city: str | None = None,
+    min_fee: int | None = None,
+    max_fee: int | None = None,
+    sector: Sector = Sector.Private,
+    limit: int = 10,
+    offset: int = 0,
+    sort_by: str = "estimated_total_fee",
+    order: str = "asc",
+    current_user: dict = Depends(get_current_user),
+):
+    is_desc = order.lower() == "desc"
+    range_end = offset + limit - 1
+    student_percentage = current_user["fsc_percentage"]
+    client = get_supabase_admin_client()
+
+    try:
+        # 1. Base Query with Nested Join
+        # Notice we added admission_requirements(*) to grab the cut-offs!
+        query = client.table("programs").select(
+            "*, universities!inner(*), admission_requirements(*)", count=CountMethod.exact
+        )
+
+        # 2. Apply Filters (Same as before)
+        if field:
+            query = query.ilike("field_of_study", f"%{field}%")
+        if min_fee is not None:
+            query = query.gte("estimated_total_fee", min_fee)
+        if max_fee is not None:
+            query = query.lte("estimated_total_fee", max_fee)
+        if city:
+            query = query.ilike("universities.city", f"%{city}%")
+        if sector is not None:
+            print("Sectore:", sector.value)
+            query = query.eq("universities.sector", sector.value)
+
+        # 3. Apply Sorting and Pagination
+        query = query.order(sort_by, desc=is_desc)
+        query = query.range(offset, range_end)
+
+        # 4. Execute the query
+        response = query.execute()
+        programs_data = response.data
+
+        # 5. 🧠 The AI Counselor Logic: Inject Eligibility Tiers
+        if student_percentage is not None:
+            for program in programs_data:
+                # Set a default state
+                program["eligibility"] = {"tier": "Unknown", "is_eligible": False}
+
+                # Find the requirement that matches the student's quota
+                reqs = program.get("admission_requirements", [])
+                target_req = next((r for r in reqs if r["quota_category"] == quota_category), None)
+
+                if target_req:
+                    min_fsc = float(target_req["min_fsc_percentage"])
+                    merit_cutoff = float(target_req["last_closing_aggregate"])
+
+                    # Apply the Tier Logic
+                    if student_percentage < min_fsc:
+                        program["eligibility"] = {"tier": "Not Eligible", "is_eligible": False}
+                    elif student_percentage > (merit_cutoff + 10):
+                        program["eligibility"] = {"tier": "Safety", "is_eligible": True}
+                    elif (merit_cutoff - 10) <= student_percentage <= (merit_cutoff + 10):
+                        program["eligibility"] = {"tier": "Target", "is_eligible": True}
+                    else:
+                        program["eligibility"] = {"tier": "Reach", "is_eligible": True}
+
+                # Cleanup: We can delete the raw requirements list to keep the JSON payload small
+                del program["admission_requirements"]
+
+        # 6. Calculate Metadata
+        total_count = response.count or 0
+        total_page = math.ceil(total_count / limit) if limit > 0 else 0
+
+        return {
+            "data": programs_data,
+            "metadata": {
+                "total_count": total_count,
+                "total_pages": total_page,
+                "limit": limit,
+                "offset": offset,
+            },
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Program search failed: {str(e)}",
+        ) from e
