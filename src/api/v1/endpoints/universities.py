@@ -12,7 +12,7 @@ def add_university(body: UniversityCreate):
     data = body.model_dump(mode="json")
     name = client.table("universities").select("*").eq("name", data.get("name")).execute()
 
-    if name:
+    if name.data:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail=" University already exist"
         )
