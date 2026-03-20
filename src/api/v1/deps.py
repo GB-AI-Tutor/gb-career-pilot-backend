@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError
+from jwt import DecodeError
 
 from src.database.database import get_supabase_client
 from src.utils.security import decode_jwt_token
@@ -29,7 +29,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(h
         if user_id is None:
             raise credentials_exception
 
-    except JWTError as e:
+    except DecodeError as e:
         raise credentials_exception from e
 
     client = get_supabase_client()
