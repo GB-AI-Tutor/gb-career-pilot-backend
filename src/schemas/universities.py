@@ -92,7 +92,20 @@ class UniversityUpdate(BaseModel):
     # programs : list[ProgramBase] | None = Field(default=None)
 
 
-# --- Admission Requirements (Bonus) ---
+class UniversitySearchArgs(BaseModel):
+    location: str | None = Field(
+        None, description=" The city or region to search in (e.g, 'Lahore', 'Gilgit')"
+    )
+    program_name: str | None = Field(
+        None, description="The Subject or Degree field(e.g., 'Computer Science' ,'Nursing)"
+    )
+
+    max_fee: int | None = Field(
+        None, description=" The Maximum annual tuition fee the student can afford."
+    )
+
+
+# --- Admission Requirements ---
 
 
 class AdmissionRequirementBase(BaseModel):

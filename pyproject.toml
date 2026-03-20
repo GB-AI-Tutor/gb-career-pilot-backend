@@ -6,13 +6,25 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi==0.110.0",
+    "groq>=1.1.1",
     "passlib[bcrypt]>=1.7.4",
+    "pre-commit>=4.5.1",
     "pydantic-settings>=2.13.1",
     "pydantic[email]>=2.12.5",
     "pyjwt==2.8.0",
     "resend>=2.23.0",
     "sib-api-v3-sdk>=7.6.0",
+    "supabase>=2.16.0",
+    "uvicorn>=0.42.0",
 ]
+
+[tool.pytest.ini_options]
+# Tell pytest where to find the src module
+pythonpath = ["."]
+# Specify test file patterns
+testpaths = ["tests"]
+# Show extra test summary info
+addopts = "-v --tb=short"
 
 [tool.mypy]
 # This tells mypy to look inside the 'src' directory for modules
@@ -24,3 +36,9 @@ namespace_packages = true
 
 # Optional: suppress errors for 3rd party libs without stubs (like supabase)
 ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-mock>=3.14.0",
+]

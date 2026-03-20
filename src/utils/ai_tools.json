@@ -1,0 +1,10 @@
+[
+    {
+        "type": "function",
+        "function": {
+            "name": "search_universities",
+            "description": "Search for universities in Pakistan based on location, degree program, and tuition fees.",
+            "parameters": UniversitySearchArgs.model_json_schema(), # 👈 Pydantic does the hard work here!
+        },
+    }
+]
