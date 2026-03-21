@@ -6,7 +6,7 @@ import uuid
 from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi.responses import StreamingResponse
 
-from src.api.v1.deps import get_current_user
+from src.api.v1.deps import get_current_user, rate_limiter
 from src.database.database import get_supabase_admin_client
 from src.schemas.ai_schemas import ChatRequest
 from src.services.ai_tools import tools
@@ -34,8 +34,9 @@ def chat(
     chatlist: ChatRequest,
     background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user),
-    # rate_limit_check: bool = Depends(rate_limiter) # Uncomment when you add Issue #31
+    rate_limit_check: bool = Depends(rate_limiter),  # Uncomment when you add Issue #31
 ):
+    # raise Exception("This is a fake crash to test my global handler!")
     db = get_supabase_admin_client()
 
     # 1. ID Validation & Message Extraction
