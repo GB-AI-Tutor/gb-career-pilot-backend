@@ -19,4 +19,4 @@ class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(
         ..., min_length=1, description=" The full conversation history, include the new message"
     )
-    conversation_id: UUID | None = None
+    conversation_id: UUID | None = Field(default=None)

@@ -19,7 +19,23 @@ def convertion_history(conversation_id: UUID, limit_count: int = 15):
     )
     history = response.data
     history.reverse()
-    return history
+
+    # Clean up messages to ensure tool_calls is only present for assistant messages
+    cleaned_history = []
+    for msg in history:
+        cleaned_msg = {"role": msg["role"], "content": msg["content"]}
+
+        # Only include tool_calls for assistant messages
+        if msg["role"] == "assistant" and msg.get("tool_calls"):
+            cleaned_msg["tool_calls"] = msg["tool_calls"]
+
+        # Only include tool_call_id for tool messages
+        if msg["role"] == "tool" and msg.get("tool_call_id"):
+            cleaned_msg["tool_call_id"] = msg["tool_call_id"]
+
+        cleaned_history.append(cleaned_msg)
+
+    return cleaned_history
 
 
 def extract_and_update_memory(
@@ -63,3 +79,43 @@ def extract_and_update_memory(
 
     except Exception as e:
         print(f"Failed to update memory: {e}")
+
+
+# prompts.py
+
+
+def get_counselor_prompt(memory_string: str = "{}") -> dict:
+    return {
+        "role": "system",
+        "content": (
+            "You are a helpful AI Tutor for students in Gilgit Baltistan. "
+            "You have access to two tools: 1) search_universities, 2) brave_search. "
+            "Always try search_universities first. \n\n"
+            "--- STUDENT CONTEXT (MEMORY) ---\n"
+            "Use these facts to personalize your advice and university recommendations. "
+            "Do not ask the student for this information if it is already provided below:\n"
+            "Do NOT output raw <function> tags in your text. Always use the standard JSON tool-calling structure\n"
+            "Never use phrases like 'Based on the search results' or 'Here is what I found'. Speak directly and naturally as a mentor."
+            "When asked about the 'best' universities, prioritize nationally recognized top-tier institutions for that specific field first, then apply regional context or quotas."
+            "Always mention specific entry tests (e.g., NET, NTS NAT, ECAT) when discussing admissions in Pakistan."
+            f"{memory_string}\n"
+            "--------------------------------\n"
+        ),
+    }
+
+
+def get_extractor_prompt(current_memory_json: str) -> dict:
+    return {
+        "role": "system",
+        "content": (
+            "You are a background data extraction assistant. "
+            "Your job is to read the recent conversation and extract facts into a strict JSON object. "
+            "Track these keys: 'current_education', 'academic_goals' (use a list with the current goal at index 0), "
+            "'financial_constraints', and 'location_preferences'.\n\n"
+            "RULES:\n"
+            "1. Output ONLY valid JSON. No markdown.\n"
+            "2. If a value is unknown, omit the key or use null.\n"
+            "3. If the student states a NEW preference, OVERWRITE the old one.\n"
+            f"CURRENT MEMORY STATE: {current_memory_json}"
+        ),
+    }
