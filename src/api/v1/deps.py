@@ -1,8 +1,10 @@
+from datetime import datetime, timedelta
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError
+from jwt import DecodeError
 
-from src.database.database import get_supabase_client
+from src.database.database import get_supabase_admin_client, get_supabase_client
 from src.utils.security import decode_jwt_token
 
 # We changed from HTTPOthpasswordbaeare to HTTPBearer because it is flexible in swager UI then previous one.
@@ -29,7 +31,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(h
         if user_id is None:
             raise credentials_exception
 
-    except JWTError as e:
+    except DecodeError as e:
         raise credentials_exception from e
 
     client = get_supabase_client()
@@ -41,3 +43,37 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(h
         return response.data
     except Exception as e:
         raise credentials_exception from e
+
+
+# Import your get_current_user and get_supabase_admin_client functions
+
+
+def rate_limiter(current_user: dict = Depends(get_current_user)):
+    db = get_supabase_admin_client()
+    user_id = current_user["id"]
+
+    # Calculate the timestamp for 1 hour ago
+    one_hour_ago = (datetime.utcnow() - timedelta(hours=1)).isoformat()
+
+    # Query Supabase: Count messages sent by this user's conversations in the last hour
+    # Note: Adjust this query based on your exact Supabase schema relationships
+    response = (
+        db.table("conversations")
+        .select("id, messages!inner(id)")
+        .eq("user_id", user_id)
+        .gte("messages.created_at", one_hour_ago)
+        .execute()
+    )
+
+    # Tally up the messages
+    recent_message_count = sum(len(conv.get("messages", [])) for conv in response.data)
+
+    max_request_per_hours = 20
+
+    if recent_message_count >= max_request_per_hours:
+        raise HTTPException(
+            status_code=429,
+            detail="You've reached your hourly limit. Please take a break and try again later!",
+        )
+
+    return True

@@ -9,7 +9,6 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # 3. Manually install ONLY the necessary Linux libraries for Chromium
-# We remove the problematic fonts and replace them with standard Debian equivalents
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     libnss3 \
@@ -32,21 +31,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfontconfig1 \
     && rm -rf /var/lib/apt/lists/*
 
-# 4. Copy and Install CPU-only Torch
 COPY requirements.txt .
+
+# 4. Install CPU-only Torch (MAKE SURE torch IS NOT IN requirements.txt!)
 RUN uv pip install --system torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 # 5. Install the rest of the stack
 RUN uv pip install --system -r requirements.txt
 
-# 6. Install Chromium WITHOUT '--with-deps' (We handled them in Step 3)
+# 6. Install Chromium WITHOUT '--with-deps'
 RUN playwright install chromium
 
-# 7. Finalize
+# 7. Finalize and copy code
 COPY . .
 
-# DELETE THIS LINE:
-# CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "$PORT"]
+# 8. Set a default port for local testing, Render will override this automatically
+ENV PORT=8000
+EXPOSE $PORT
 
-# ADD THIS LINE INSTEAD:
+# 9. Use the shell form so $PORT is evaluated dynamically by Render
 CMD uvicorn src.main:app --host 0.0.0.0 --port $PORT

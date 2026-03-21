@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # FastAPI Backend Application Only
+  backend:
+
+    image: ai_tutor_backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gb-career-backend-only
+
+    # 1. Force Python to print logs to the terminal instantly
+    environment:
+      - PYTHONUNBUFFERED=1
+
+    # 2. Inject Supabase/Groq keys from your hidden local file
+    env_file:
+      - .env
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      # 3. Mount source code for instant hot-reloading
+      - .:/app
+      - /app/__pycache__
+
+    # 4. START COMMAND: (Change 'main:app' to 'src.main:app' if your code is in a src/ folder!)
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload

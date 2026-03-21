@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     ALGORITHM: str
     RESEND_API_KEY: str
     BREVO_API: str
+    BRAVE_SEARCH_API_KEY: str | None = None
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
 
