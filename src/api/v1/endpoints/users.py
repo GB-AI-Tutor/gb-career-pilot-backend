@@ -16,6 +16,20 @@ router = APIRouter()
 @router.post("/Registeration")
 @limiter.limit("5/minute")
 def register_user(request: Request, body: UserRegister):
+    """
+    User Registration Endpoint
+
+    Register a new user and send email verification.
+
+    **Rate Limit:** 5 requests per minute per IP address
+
+    **Process:**
+    1. Validates unique email
+    2. Creates user account with hashed password
+    3. Sends verification email
+
+    **Returns:** Success message with user ID
+    """
     client = database.get_supabase_client()
 
     # handling duplicate emails

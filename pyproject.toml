@@ -7,10 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi==0.110.0",
     "groq>=1.1.1",
-<<<<<<< HEAD
-=======
     "loguru>=0.7.3",
->>>>>>> feature/AI_integration
     "passlib[bcrypt]>=1.7.4",
     "pre-commit>=4.5.1",
     "pydantic-settings>=2.13.1",
