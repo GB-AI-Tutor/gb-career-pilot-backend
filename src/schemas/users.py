@@ -51,3 +51,7 @@ class Token(BaseModel):
     access_token: str
     token_type: str
     user_id: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr

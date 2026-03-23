@@ -1,11 +1,12 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from src.api.v1.deps import get_current_user
 from src.api.v1.endpoints.auth import send_verification_email
 from src.database import database
+from src.rate_limiter import limiter
 from src.schemas.users import UserRegister, UserUpdate
 from src.utils.security import create_access_token, get_password_hash
 
@@ -13,12 +14,26 @@ router = APIRouter()
 
 
 @router.post("/Registeration")
-def register_user(body: UserRegister):
+@limiter.limit("5/minute")
+def register_user(request: Request, body: UserRegister):
+    """
+    User Registration Endpoint
+
+    Register a new user and send email verification.
+
+    **Rate Limit:** 5 requests per minute per IP address
+
+    **Process:**
+    1. Validates unique email
+    2. Creates user account with hashed password
+    3. Sends verification email
+
+    **Returns:** Success message with user ID
+    """
     client = database.get_supabase_client()
 
     # handling duplicate emails
-    existing_user = client.table("users").select(
-        "email").eq("email", body.email).execute()
+    existing_user = client.table("users").select("email").eq("email", body.email).execute()
 
     if existing_user.data:
         # 409 Conflict is the industry standard for duplicate data

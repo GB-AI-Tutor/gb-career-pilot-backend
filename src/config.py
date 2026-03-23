@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     BRAVE_SEARCH_API_KEY: str | None = None
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
+    SENTRY_DSN: str | None = None  # Optional Sentry error monitoring
 
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE) if ENV_FILE.exists() else None,
