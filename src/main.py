@@ -9,8 +9,24 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from src.api.v1.router import api_router
+from src.config import settings
 from src.database.database import get_supabase_client
 from src.rate_limiter import limiter
+
+# Initialize Sentry (if DSN is provided)
+if settings.SENTRY_DSN:
+    try:
+        import sentry_sdk
+
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            environment=settings.ENVIRONMENT,
+            traces_sample_rate=0.1 if settings.ENVIRONMENT == "production" else 1.0,
+            profiles_sample_rate=0.1 if settings.ENVIRONMENT == "production" else 1.0,
+        )
+        logger.info(f"✅ Sentry initialized for {settings.ENVIRONMENT} environment")
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to initialize Sentry: {e}")
 
 app = FastAPI(
     title="GB Career Pilot API",
@@ -135,7 +151,6 @@ origins = [
     "http://localhost:5173",
     "https://gb-ai-tutor.vercel.app",
     "https://gb-career-pilot-frontend.vercel.app",
-    r"https://gb-career-pilot-frontend-.*\.vercel\.app",
 ]
 
 
@@ -143,6 +158,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://gb-career-pilot-frontend-.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],  # request send by the clients

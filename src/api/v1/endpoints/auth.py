@@ -81,6 +81,18 @@ def verify_registration(token: str):
 @router.post("/login")
 @limiter.limit("5/minute")
 def login_user(request: Request, body: UserLogin):
+    """
+    User Login Endpoint
+
+    Authenticate a user and return access and refresh tokens.
+
+    **Rate Limit:** 5 requests per minute per IP address
+
+    **Returns:**
+    - access_token: Short-lived token (3 hours)
+    - refresh_token: Long-lived token (30 days)
+    - token_type: "bearer"
+    """
     client = database.get_supabase_admin_client()
 
     exist = (
@@ -184,6 +196,15 @@ def logout_user(current_user: dict = Depends(get_current_user)):
 @router.post("/forgot-password")
 @limiter.limit("3/minute")  # Very strict limit to prevent spam emails
 def forgot_password(request: Request, body: ForgotPasswordRequest):
+    """
+    Password Reset Request Endpoint
+
+    Send a password reset email to the user.
+
+    **Rate Limit:** 3 requests per minute per IP address (strict to prevent spam)
+
+    **Security:** Uses Supabase's built-in password reset mechanism.
+    """
     db = get_supabase_admin_client()
 
     try:

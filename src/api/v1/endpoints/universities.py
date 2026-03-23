@@ -16,9 +16,8 @@ router = APIRouter()
 
 
 class UniversitySortField(str, Enum):
-    fee_per_semester = "fee_per_semester"
     ranking_national = "ranking_national"
-    has_hostel = "hos_hostel"
+    has_hostel = "has_hostel"
 
 
 @router.post("/Add_university")
@@ -81,6 +80,8 @@ def get_universities(
     is_desc = order.lower() == "desc"
     range_end = offset + limit - 1
     client = get_supabase_admin_client()
+    print("Did we reach here ?")
+
     try:
         query = (
             client.table("universities")
@@ -143,7 +144,7 @@ def get_university_by_name(name: str, current_user: dict = Depends(get_current_u
 
 
 @router.get(
-    "/univeristy/{id}/programs",
+    "/university/{id}/programs",
 )
 def programs_by_university(id: int, field: str, current_user: dict = Depends(get_current_user)):
     client = get_supabase_admin_client()
