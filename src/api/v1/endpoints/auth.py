@@ -4,13 +4,16 @@ from datetime import UTC, datetime, timedelta
 import jwt
 import resend
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from jwt import InvalidTokenError as JWTError
+from loguru import logger
 
 from src.api.v1.deps import get_current_user
 from src.config import settings
 from src.database import database
-from src.schemas.users import UserLogin
+from src.database.database import get_supabase_admin_client
+from src.rate_limiter import limiter
+from src.schemas.users import ForgotPasswordRequest, UserLogin
 from src.utils.security import (
     create_access_token,
     create_refresh_access_token,
@@ -76,7 +79,20 @@ def verify_registration(token: str):
 
 # Login endpoint
 @router.post("/login")
-def login_user(body: UserLogin):
+@limiter.limit("5/minute")
+def login_user(request: Request, body: UserLogin):
+    """
+    User Login Endpoint
+
+    Authenticate a user and return access and refresh tokens.
+
+    **Rate Limit:** 5 requests per minute per IP address
+
+    **Returns:**
+    - access_token: Short-lived token (3 hours)
+    - refresh_token: Long-lived token (30 days)
+    - token_type: "bearer"
+    """
     client = database.get_supabase_admin_client()
 
     exist = (
@@ -172,3 +188,36 @@ def logout_user(current_user: dict = Depends(get_current_user)):
     client = database.get_supabase_client()
     client.table("users").update({"refresh_token": None}).eq("id", current_user["id"]).execute()
     return {"Message": " Log out successfully."}
+
+
+# Make sure your ForgotPasswordRequest is imported!
+
+
+@router.post("/forgot-password")
+@limiter.limit("3/minute")  # Very strict limit to prevent spam emails
+def forgot_password(request: Request, body: ForgotPasswordRequest):
+    """
+    Password Reset Request Endpoint
+
+    Send a password reset email to the user.
+
+    **Rate Limit:** 3 requests per minute per IP address (strict to prevent spam)
+
+    **Security:** Uses Supabase's built-in password reset mechanism.
+    """
+    db = get_supabase_admin_client()
+
+    try:
+        # Supabase automatically generates the secure token and sends the email!
+        db.auth.reset_password_for_email(
+            body.email,
+            # This is where the student is sent after clicking the link in their email
+            {"redirect_to": "http://localhost:5173/update-password"},
+        )
+    except Exception as e:
+        # We log the real error for YOU to debug later
+        logger.warning(f"Password reset email failed for {body.email}: {str(e)}")
+        # But we DO NOT raise an HTTPException to the user!
+
+    # We return your perfectly secure message no matter what happened above
+    return {"Detail": "A reset link has been sent to this email if it exists."}

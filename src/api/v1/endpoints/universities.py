@@ -5,6 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from postgrest.types import CountMethod
 
 from src.api.v1.deps import get_current_user
+
+# Assuming you have a dependency that verifies your custom JWT and returns the user's ID
+# from src.auth.dependencies import get_current_user_id
+from src.database import database
 from src.database.database import get_supabase_admin_client
 from src.schemas.universities import UniversityCreate, UniversityUpdate
 
@@ -12,9 +16,8 @@ router = APIRouter()
 
 
 class UniversitySortField(str, Enum):
-    fee_per_semester = "fee_per_semester"
     ranking_national = "ranking_national"
-    has_hostel = "hos_hostel"
+    has_hostel = "has_hostel"
 
 
 @router.post("/Add_university")
@@ -77,6 +80,8 @@ def get_universities(
     is_desc = order.lower() == "desc"
     range_end = offset + limit - 1
     client = get_supabase_admin_client()
+    print("Did we reach here ?")
+
     try:
         query = (
             client.table("universities")
@@ -139,7 +144,7 @@ def get_university_by_name(name: str, current_user: dict = Depends(get_current_u
 
 
 @router.get(
-    "/univeristy/{id}/programs",
+    "/university/{id}/programs",
 )
 def programs_by_university(id: int, field: str, current_user: dict = Depends(get_current_user)):
     client = get_supabase_admin_client()
@@ -264,4 +269,76 @@ def search_programs(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Program search failed: {str(e)}",
+        ) from e
+
+
+@router.post("/favorites/{university_id}")
+def add_favorite(
+    university_id: int,
+    user: dict = Depends(get_current_user),  # Replace with your actual auth dependency
+):
+    client = database.get_supabase_client()
+
+    try:
+        client.table("user_favorite_universities").insert(
+            {"user_id": user["id"], "university_id": university_id}
+        ).execute()
+        return {"message": "University added to favorites successfully"}
+    except Exception as e:
+        error_msg = str(e).lower()
+        # Handle the composite primary key violation if they double-click
+        if "duplicate key value" in error_msg or "23505" in error_msg:
+            return {"message": "University is already in favorites"}
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to add favorite"
+        ) from e
+
+
+@router.delete("/favorites/{university_id}")
+def remove_favorite(university_id: int, user: dict = Depends(get_current_user)):
+    client = database.get_supabase_client()
+
+    try:
+        response = (
+            client.table("user_favorite_universities")
+            .delete()
+            .match({"user_id": user["id"], "university_id": university_id})
+            .execute()
+        )
+
+        # If no rows were returned/deleted, it wasn't in their favorites
+        if not response.data:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Favorite not found.")
+
+        return {"message": "University removed from favorites"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to remove favorite"
+        ) from e
+
+
+@router.get("/favorites")
+def get_favorites(user: dict = Depends(get_current_user)):
+    client = database.get_supabase_client()
+
+    try:
+        # We use an !inner join to fetch the actual university details
+        # right alongside the bookmark record
+        response = (
+            client.table("user_favorite_universities")
+            .select("created_at, universities!inner(*)")
+            .eq("user_id", user["id"])
+            .execute()
+        )
+
+        # Extract just the university objects to make the frontend's life easier
+        bookmarked_universities = [row["universities"] for row in response.data]
+
+        return {"data": bookmarked_universities, "total_count": len(bookmarked_universities)}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch favorites"
         ) from e
