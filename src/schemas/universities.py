@@ -92,6 +92,7 @@ class UniversityUpdate(BaseModel):
     # programs : list[ProgramBase] | None = Field(default=None)
 
 
+
 class UniversitySearchArgs(BaseModel):
     location: str | None = Field(
         None, description=" The city or region to search in (e.g, 'Lahore', 'Gilgit')"
