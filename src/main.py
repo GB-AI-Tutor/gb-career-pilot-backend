@@ -150,7 +150,7 @@ async def log_requests(request: Request, call_next):
 origins = [
     "http://localhost:5173",
     "https://gb-ai-tutor.vercel.app",
-    "https://raqeebs.app/*",
+    "https://raqeebs.app",
     "https://gb-career-pilot-frontend.vercel.app",
 ]
 
