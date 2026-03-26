@@ -88,6 +88,34 @@ def serialize_messages_for_groq(messages: list) -> list:
     return serialized
 
 
+def normalize_search_universities_args(raw_args: dict) -> dict:
+    """Normalize model tool args into backend-safe types.
+
+    Handles common LLM artifacts like string "null" and numeric values encoded as strings.
+    """
+    args = dict(raw_args or {})
+
+    for key in ("location", "program_name"):
+        value = args.get(key)
+        if isinstance(value, str):
+            trimmed = value.strip()
+            if trimmed.lower() in {"null", "none", ""}:
+                args[key] = None
+            else:
+                args[key] = trimmed
+
+    max_fee = args.get("max_fee")
+    if isinstance(max_fee, str):
+        cleaned = max_fee.strip()
+        if cleaned.lower() in {"null", "none", ""}:
+            args["max_fee"] = None
+        else:
+            digits = cleaned.replace(",", "")
+            args["max_fee"] = int(digits) if digits.isdigit() else None
+
+    return args
+
+
 # ---
 
 
@@ -301,7 +329,8 @@ def chat(
             tool_name = tool_call["function"].get("name", "")
 
             if tool_name == "search_universities":
-                tool_result = get_universities_from_db(**args)
+                normalized_args = normalize_search_universities_args(args)
+                tool_result = get_universities_from_db(**normalized_args)
             elif tool_name == "brave_search":
                 tool_result = brave_search(args.get("query", ""), args.get("count", 5))
             else:

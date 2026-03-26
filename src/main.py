@@ -9,6 +9,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from src.api.v1.router import api_router
+from src.cache.redis_client import test_redis_connection
 from src.config import settings
 from src.database.database import get_supabase_client
 from src.rate_limiter import limiter
@@ -173,6 +174,36 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],  # request send by the clients
 )
+
+
+# Startup event - Test connections
+@app.on_event("startup")
+async def startup_event():
+    """Run startup checks and initialize services."""
+    logger.info("🚀 Starting GB Career Pilot API...")
+    logger.info(f"📍 Environment: {settings.ENVIRONMENT}")
+
+    # Test Redis connection
+    logger.info("🔍 Testing Redis connection...")
+    redis_connected = test_redis_connection()
+    if redis_connected:
+        logger.info("✅ Redis is ready for caching and rate limiting!")
+    else:
+        logger.warning("⚠️ Redis connection failed - API will run with degraded performance")
+        logger.warning("⚠️ Rate limiting will use in-memory storage (non-persistent)")
+
+    # Test database connection
+    logger.info("🔍 Testing database connection...")
+    try:
+        supabase = get_supabase_client()
+        # Quick test query
+        supabase.table("universities").select("id").limit(1).execute()
+        logger.info("✅ Database connection successful!")
+    except Exception as e:
+        logger.error(f"❌ Database connection test failed: {e}")
+        logger.warning("⚠️ API may not function correctly without database access")
+
+    logger.info("✅ Startup checks complete - API is ready!")
 
 
 @app.get("/")
