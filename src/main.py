@@ -151,6 +151,7 @@ origins = [
     "http://localhost:5173",
     "https://gb-ai-tutor.vercel.app",
     "https://raqeebs.app",
+    "https://www.raqeebs.app",
     "https://gb-career-pilot-frontend.vercel.app",
 ]
 
