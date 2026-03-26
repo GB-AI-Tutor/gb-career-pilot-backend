@@ -100,7 +100,7 @@ class UniversitySearchArgs(BaseModel):
         None, description="The Subject or Degree field(e.g., 'Computer Science' ,'Nursing)"
     )
 
-    max_fee: int | None = Field(
+    max_fee: int | str | None = Field(
         None, description=" The Maximum annual tuition fee the student can afford."
     )
 
