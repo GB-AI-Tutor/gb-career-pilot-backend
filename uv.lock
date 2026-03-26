@@ -268,10 +268,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "groq" },
-<<<<<<< HEAD
-=======
     { name = "loguru" },
->>>>>>> e8f1ef46c279d20d74fcd9a484548aa3978fcc22
     { name = "passlib", extra = ["bcrypt"] },
     { name = "pre-commit" },
     { name = "pydantic", extra = ["email"] },
@@ -293,10 +290,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = "==0.110.0" },
     { name = "groq", specifier = ">=1.1.1" },
-<<<<<<< HEAD
-=======
     { name = "loguru", specifier = ">=0.7.3" },
->>>>>>> e8f1ef46c279d20d74fcd9a484548aa3978fcc22
     { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4" },
     { name = "pre-commit", specifier = ">=4.5.1" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.12.5" },
@@ -446,8 +440,6 @@ wheels = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "loguru"
 version = "0.7.3"
 source = { registry = "https://pypi.org/simple" }
@@ -461,7 +453,6 @@ wheels = [
 ]
 
 [[package]]
->>>>>>> e8f1ef46c279d20d74fcd9a484548aa3978fcc22
 name = "nodeenv"
 version = "1.10.0"
 source = { registry = "https://pypi.org/simple" }
@@ -996,8 +987,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/1b/6c/c65773d6cab416a64d191d6ee8a8b1c68a09970ea6909d16965d26bfed1e/websockets-15.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:e09473f095a819042ecb2ab9465aee615bd9c2028e4ef7d933600a8401c79561", size = 176837, upload-time = "2025-03-05T20:02:55.237Z" },
     { url = "https://files.pythonhosted.org/packages/fa/a8/5b41e0da817d64113292ab1f8247140aac61cbf6cfd085d6a0fa77f4984f/websockets-15.0.1-py3-none-any.whl", hash = "sha256:f7a866fbc1e97b5c617ee4116daaa09b722101d4a3c170c787450ba409f9736f", size = 169743, upload-time = "2025-03-05T20:03:39.41Z" },
 ]
-<<<<<<< HEAD
-=======
 
 [[package]]
 name = "win32-setctime"
@@ -1007,4 +996,3 @@ sdist = { url = "https://files.pythonhosted.org/packages/b3/8f/705086c9d734d3b66
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e1/07/c6fe3ad3e685340704d314d765b7912993bcb8dc198f0e7a89382d37974b/win32_setctime-1.2.0-py3-none-any.whl", hash = "sha256:95d644c4e708aba81dc3704a116d8cbc974d70b3bdb8be1d150e36be6e9d1390", size = 4083, upload-time = "2024-12-07T15:28:26.465Z" },
 ]
->>>>>>> e8f1ef46c279d20d74fcd9a484548aa3978fcc22
