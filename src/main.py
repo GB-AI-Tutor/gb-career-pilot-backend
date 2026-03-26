@@ -149,16 +149,25 @@ async def log_requests(request: Request, call_next):
 # Origins which are allowed to access backend API
 origins = [
     "http://localhost:5173",
-    "https://gb-ai-tutor.vercel.app",
+    "http://127.0.0.1:5173",
+    "https://raqeebs.app",
     "https://gb-career-pilot-frontend.vercel.app",
 ]
+
+frontend_url = settings.FRONTEND_URL.rstrip("/")
+if frontend_url and frontend_url not in origins:
+    origins.append(frontend_url)
+
+VERCEL_PREVIEW_ORIGIN_REGEX = (
+    r"^https://(gb-career-pilot-frontend|gb-ai-tutor)-[a-z0-9-]+\.vercel\.app$"
+)
 
 
 # using Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https://gb-career-pilot-frontend-.*\.vercel\.app",
+    allow_origin_regex=VERCEL_PREVIEW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],  # request send by the clients
