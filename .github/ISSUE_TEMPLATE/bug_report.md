@@ -1,79 +1,56 @@
 ---
 name: Bug Report
-about: Report a bug or unexpected behavior
+about: Report a bug to help us improve
 title: '[BUG] '
 labels: bug
 assignees: ''
 ---
 
-## Bug Description
-<!-- Clear, concise description of the bug -->
+## 🐛 Bug Description
 
+<!-- A clear and concise description of the bug -->
 
+## 📋 Steps to Reproduce
 
-## Steps to Reproduce
-<!-- Exact steps to reproduce the behavior -->
 1. Go to '...'
 2. Click on '...'
 3. Scroll down to '...'
 4. See error
 
-## Expected Behavior
-<!-- What should have happened? -->
+## ✅ Expected Behavior
 
+<!-- What you expected to happen -->
 
+## ❌ Actual Behavior
 
-## Actual Behavior
-<!-- What actually happened? -->
+<!-- What actually happened -->
 
+## 📸 Screenshots
 
+<!-- If applicable, add screenshots to help explain the problem -->
 
-## Screenshots/Videos
-<!-- If applicable, add screenshots or screen recording -->
+## 🖥️ Environment
 
+- **OS:** [e.g., Windows 11, macOS 14, Ubuntu 22.04]
+- **Browser:** [e.g., Chrome 120, Firefox 121, Safari 17]
+- **Device:** [e.g., Desktop, Mobile, Tablet]
+- **Screen Size:** [e.g., 1920x1080, Mobile 375x667]
 
+**For Backend Issues:**
+- **Python Version:** [e.g., 3.10]
+- **OS:** [e.g., Ubuntu 22.04]
 
-## Error Messages
-<!-- Copy-paste any error messages, logs, or stack traces -->
-```
-Paste error here
-```
+## 📝 Additional Context
 
-## Environment
-<!-- Check all that apply -->
-- **Device:** <!-- Desktop / Mobile / Tablet -->
-- **OS:** <!-- Windows 11, macOS, Android, iOS -->
-- **Browser:** <!-- Chrome, Firefox, Safari, Edge -->
-- **Browser Version:** <!-- e.g., Chrome 120 -->
-- **App Version:** <!-- Check About page or commit hash -->
+<!-- Any other relevant information -->
 
-## Reproducibility
-<!-- How often does this happen? -->
-- [ ] Always (100%)
-- [ ] Frequently (>50%)
-- [ ] Sometimes (<50%)
-- [ ] Rarely (happened once or twice)
+## 🔍 Possible Solution
 
-## Impact
-<!-- How severe is this bug? -->
-- [ ] 🔴 Critical (app crashes, data loss, security issue)
-- [ ] 🟡 High (major feature broken)
-- [ ] 🟢 Medium (feature partially broken)
-- [ ] ⚪ Low (cosmetic, minor inconvenience)
+<!-- Optional: Suggest a fix or reason for the bug -->
 
-## Possible Cause
-<!-- If you have any idea what might be causing this -->
+## ✔️ Checklist
 
-
-
-## Workaround
-<!-- If you found a way to temporarily work around this bug -->
-
-
-
----
-
-## For Developers
-**Squad:** <!-- Which team should fix this? -->
-**Estimate:** <!-- Time to fix -->
-**Related to:** #<!-- Link to related issues/PRs -->
+- [ ] I have searched existing issues to avoid duplicates
+- [ ] I have provided all required information above
+- [ ] I can reproduce this bug consistently
+- [ ] I am willing to help fix this bug (if guided)
