@@ -1,0 +1,98 @@
+# CODEOWNERS - Backend Repository
+#
+# This file defines who must review PRs for specific files/directories.
+# Code owners are automatically requested for review when a PR touches their files.
+# More info: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ==============================================================================
+# GLOBAL OWNER (All files)
+# ==============================================================================
+# You (organization owner) must review everything by default
+* @RaeesRaqeeb
+
+# ==============================================================================
+# CRITICAL PATHS (Require Owner Review)
+# ==============================================================================
+
+# Authentication & Authorization (SECURITY CRITICAL)
+/src/auth/ @RaeesRaqeeb
+/src/api/v1/endpoints/auth.py @RaeesRaqeeb
+/src/utils/security.py @RaeesRaqeeb
+
+# AI Integration (Core Feature)
+/src/ai/ @RaeesRaqeeb
+/src/api/v1/endpoints/ai_endpoints.py @RaeesRaqeeb
+/src/services/coversation_history.py @RaeesRaqeeb
+/src/utils/ai_client.py @RaeesRaqeeb
+
+# Configuration & Secrets (SECURITY CRITICAL)
+/src/config.py @RaeesRaqeeb
+.env.example @RaeesRaqeeb
+docker-compose.yml @RaeesRaqeeb
+Dockerfile @RaeesRaqeeb
+
+# Database Models & Migrations (DATA INTEGRITY)
+/src/models/ @RaeesRaqeeb
+/src/database/ @RaeesRaqeeb
+/alembic/ @RaeesRaqeeb
+
+# API Routes (Breaking Changes)
+/src/api/v1/endpoints/ @RaeesRaqeeb
+
+# ==============================================================================
+# CI/CD & Infrastructure (Owner Only)
+# ==============================================================================
+/.github/workflows/ @RaeesRaqeeb
+/.github/CODEOWNERS @RaeesRaqeeb
+render.yaml @RaeesRaqeeb
+
+# ==============================================================================
+# SHARED REVIEW (Owner + Trusted Maintainers)
+# ==============================================================================
+# Once you have trusted maintainers, uncomment and add their usernames:
+
+# API Routes (Can be reviewed by backend maintainers)
+# /src/api/v1/endpoints/ @RaeesRaqeeb @TrustedBackendMaintainer1
+
+# Database Schemas (Can be reviewed by senior contributors)
+# /src/schemas/ @RaeesRaqeeb @TrustedBackendMaintainer1
+
+# Services & Business Logic
+# /src/services/ @RaeesRaqeeb @TrustedBackendMaintainer1
+
+# ==============================================================================
+# TESTING (Can be reviewed by any maintainer)
+# ==============================================================================
+# Tests can be reviewed by multiple people
+/tests/ @RaeesRaqeeb
+# Add more reviewers as community grows:
+# /tests/ @RaeesRaqeeb @Maintainer1 @Maintainer2
+
+# ==============================================================================
+# DOCUMENTATION (Community Can Help Review)
+# ==============================================================================
+# Documentation changes can be reviewed by maintainers or experienced contributors
+*.md @RaeesRaqeeb
+# Add doc maintainers later:
+# *.md @RaeesRaqeeb @DocMaintainer1
+
+/docs/ @RaeesRaqeeb
+
+# ==============================================================================
+# DEPENDENCIES (Careful Review Needed)
+# ==============================================================================
+requirements.txt @RaeesRaqeeb
+pyproject.toml @RaeesRaqeeb
+setup.py @RaeesRaqeeb
+
+# ==============================================================================
+# NOTES FOR CONTRIBUTORS
+# ==============================================================================
+#
+# - All PRs need at least 2 approvals (set in branch protection)
+# - Code owners are AUTOMATICALLY requested for review
+# - Owner (@RaeesRaqeeb) has final approval on all changes
+# - Security-related changes MUST be reviewed by owner
+# - Contributors can suggest changes, but can't bypass reviews
+#
+# Questions? Ask in Discord #backend-general or open a discussion!
