@@ -24,7 +24,7 @@
 
 GB Career Pilot Backend is a production-ready FastAPI application powering an AI-driven university counseling platform. It helps students in Gilgit-Baltistan, Pakistan discover universities, programs, and career paths using Groq's Llama 3.3 70B.
 
-**Live API:** https://gb-career-pilot-api.onrender.com
+**Live API:** [https://gb-career-pilot-api.onrender.com](https://gb-career-pilot-backend.onrender.com/)
 **Frontend:** https://raqeebs.app
 
 ---
