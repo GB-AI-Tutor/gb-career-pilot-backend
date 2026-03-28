@@ -25,9 +25,9 @@ if settings.SENTRY_DSN:
             traces_sample_rate=0.1 if settings.ENVIRONMENT == "production" else 1.0,
             profiles_sample_rate=0.1 if settings.ENVIRONMENT == "production" else 1.0,
         )
-        logger.info(f"✅ Sentry initialized for {settings.ENVIRONMENT} environment")
+        logger.info(f" Sentry initialized for {settings.ENVIRONMENT} environment")
     except Exception as e:
-        logger.warning(f"⚠️ Failed to initialize Sentry: {e}")
+        logger.warning(f" Failed to initialize Sentry: {e}")
 
 app = FastAPI(
     title="GB Career Pilot API",
@@ -81,17 +81,17 @@ async def custom_tutor_exception_handler(request: Request, exc: TutorExceptionEr
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    # Log the DANGEROUS details for you, securely in your file 📝
+    # Log the DANGEROUS details for you, securely in your file
     logger.exception(f"CRASH on {request.url.path}")
 
-    # Send a SAFE message to the student 🛡️
+    # Send a SAFE message to the student
     return JSONResponse(
         status_code=500,
         content={
             "status_code": 500,
             "error_type": "InternalServerError",
             "message": "Something went wrong on our end. Please try again later.",
-            "details": "An unexpected error occurred.",  # Replaced str(exc)!
+            "details": "An unexpected error occurred.",
         },
     )
 
@@ -180,30 +180,30 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Run startup checks and initialize services."""
-    logger.info("🚀 Starting GB Career Pilot API...")
-    logger.info(f"📍 Environment: {settings.ENVIRONMENT}")
+    logger.info(" Starting GB Career Pilot API...")
+    logger.info(f" Environment: {settings.ENVIRONMENT}")
 
     # Test Redis connection
-    logger.info("🔍 Testing Redis connection...")
+    logger.info(" Testing Redis connection...")
     redis_connected = test_redis_connection()
     if redis_connected:
-        logger.info("✅ Redis is ready for caching and rate limiting!")
+        logger.info(" Redis is ready for caching and rate limiting!")
     else:
-        logger.warning("⚠️ Redis connection failed - API will run with degraded performance")
-        logger.warning("⚠️ Rate limiting will use in-memory storage (non-persistent)")
+        logger.warning(" Redis connection failed - API will run with degraded performance")
+        logger.warning(" Rate limiting will use in-memory storage (non-persistent)")
 
     # Test database connection
-    logger.info("🔍 Testing database connection...")
+    logger.info(" Testing database connection...")
     try:
         supabase = get_supabase_client()
         # Quick test query
         supabase.table("universities").select("id").limit(1).execute()
-        logger.info("✅ Database connection successful!")
+        logger.info(" Database connection successful!")
     except Exception as e:
-        logger.error(f"❌ Database connection test failed: {e}")
-        logger.warning("⚠️ API may not function correctly without database access")
+        logger.error(f" Database connection test failed: {e}")
+        logger.warning(" API may not function correctly without database access")
 
-    logger.info("✅ Startup checks complete - API is ready!")
+    logger.info(" Startup checks complete - API is ready!")
 
 
 @app.get("/")
@@ -225,18 +225,4 @@ def universites_data():
     return universites_data
 
 
-# @app.get("/users")
-# def users():
-#     data = get_supabase_client()
-#     response = data.table("users").select("*").execute()
-#     users = response.data
-
-#     return users
-
-# Register router
-
-
 app.include_router(api_router, prefix="/api/v1")
-
-# app.include_router(universities.router, prefix="/api", tags=["universities"])
-# app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])  # ADD THIS

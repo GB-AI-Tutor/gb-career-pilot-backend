@@ -89,8 +89,6 @@ class UniversityUpdate(BaseModel):
     website: HttpUrl | None = None
     has_hostel: bool = False
     has_general_scholarships: bool = False
-    # programs : list[ProgramBase] | None = Field(default=None)
-
 
 
 class UniversitySearchArgs(BaseModel):

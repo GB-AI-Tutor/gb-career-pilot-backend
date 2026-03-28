@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from supabase import Client, create_client
+from supabase.client import Client, create_client
 
 from src.config import settings
 

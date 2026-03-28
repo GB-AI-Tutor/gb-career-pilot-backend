@@ -45,9 +45,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(h
         raise credentials_exception from e
 
 
-# Import your get_current_user and get_supabase_admin_client functions
-
-
 def rate_limiter(current_user: dict = Depends(get_current_user)):
     db = get_supabase_admin_client()
     user_id = current_user["id"]
@@ -56,7 +53,6 @@ def rate_limiter(current_user: dict = Depends(get_current_user)):
     one_hour_ago = (datetime.utcnow() - timedelta(hours=1)).isoformat()
 
     # Query Supabase: Count messages sent by this user's conversations in the last hour
-    # Note: Adjust this query based on your exact Supabase schema relationships
     response = (
         db.table("conversations")
         .select("id, messages!inner(id)")
@@ -65,7 +61,6 @@ def rate_limiter(current_user: dict = Depends(get_current_user)):
         .execute()
     )
 
-    # Tally up the messages
     recent_message_count = sum(len(conv.get("messages", [])) for conv in response.data)
 
     max_request_per_hours = 20

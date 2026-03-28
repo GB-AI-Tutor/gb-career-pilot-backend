@@ -31,12 +31,12 @@ router = APIRouter()
 def send_verification_email(receiver_email: str, token: str):
     verification_link = f"{settings.FRONTEND_URL}/verify?token={token}"
 
-    resend.api_key = settings.RESEND_API_KEY  # add this to your .env
+    resend.api_key = settings.RESEND_API_KEY
 
     try:
         resend.Emails.send(
             {
-                "from": "GB Career Pilot <no-reply@raqeebs.app>",  # free no-domain sender
+                "from": "GB Career Pilot <no-reply@raqeebs.app>",
                 "to": [receiver_email],
                 "subject": "Verify your account",
                 "text": f"Welcome! Please click the following link to verify your email:\n\n{verification_link}",
@@ -49,8 +49,6 @@ def send_verification_email(receiver_email: str, token: str):
 
 @router.post("/verify")
 def verify_registration(token: str):
-    """Endpoint hit by the React frontend when the user clicks the email link."""
-    # Ensure this client uses the SERVICE_ROLE_KEY to bypass RLS during insert
     client = database.get_supabase_admin_client()
 
     try:
@@ -81,18 +79,6 @@ def verify_registration(token: str):
 @router.post("/login")
 @limiter.limit("5/minute")
 def login_user(request: Request, body: UserLogin):
-    """
-    User Login Endpoint
-
-    Authenticate a user and return access and refresh tokens.
-
-    **Rate Limit:** 5 requests per minute per IP address
-
-    **Returns:**
-    - access_token: Short-lived token (3 hours)
-    - refresh_token: Long-lived token (30 days)
-    - token_type: "bearer"
-    """
     client = database.get_supabase_admin_client()
 
     exist = (
@@ -148,12 +134,6 @@ def refresh_access_token(refresh_token: str):
         data = payload.get("user_data")
         user_id = data.get("sub")
 
-        # if user_id is None:
-        #     raise credentials_exception
-        print("*" * 20)
-        print("Payload", user_id)
-        print("*" * 20)
-
         email = payload.get("email")
 
     except JWTError as e:
@@ -190,21 +170,9 @@ def logout_user(current_user: dict = Depends(get_current_user)):
     return {"Message": " Log out successfully."}
 
 
-# Make sure your ForgotPasswordRequest is imported!
-
-
 @router.post("/forgot-password")
 @limiter.limit("3/minute")  # Very strict limit to prevent spam emails
 def forgot_password(request: Request, body: ForgotPasswordRequest):
-    """
-    Password Reset Request Endpoint
-
-    Send a password reset email to the user.
-
-    **Rate Limit:** 3 requests per minute per IP address (strict to prevent spam)
-
-    **Security:** Uses Supabase's built-in password reset mechanism.
-    """
     db = get_supabase_admin_client()
 
     try:
@@ -215,9 +183,9 @@ def forgot_password(request: Request, body: ForgotPasswordRequest):
             {"redirect_to": "http://localhost:5173/update-password"},
         )
     except Exception as e:
-        # We log the real error for YOU to debug later
+        # We log the real error for to debug later
         logger.warning(f"Password reset email failed for {body.email}: {str(e)}")
-        # But we DO NOT raise an HTTPException to the user!
+        # But we DO NOT raise an HTTPException to the user
 
-    # We return your perfectly secure message no matter what happened above
+    # We return perfectly secure message no matter what happened above
     return {"Detail": "A reset link has been sent to this email if it exists."}
