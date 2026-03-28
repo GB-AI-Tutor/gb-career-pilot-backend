@@ -27,14 +27,14 @@ def convertion_history(conversation_id: UUID | str, limit_count: int = 15):
     # Clean up messages to ensure tool_calls is only present for assistant messages
     cleaned_history = []
     for msg in history:
-        # ✅ CRITICAL: Validate required fields exist and are not None
+        # CRITICAL: Validate required fields exist and are not None
         if not msg.get("role") or msg["role"] is None:
-            logger.warning(f"⚠️ Skipping message with missing/null role field: {msg}")
+            logger.warning(f" Skipping message with missing/null role field: {msg}")
             continue
 
         if not msg.get("content") and msg.get("role") != "tool":
             # For non-tool messages, content should exist
-            logger.warning(f"⚠️ Skipping message with null content: role={msg['role']}")
+            logger.warning(f" Skipping message with null content: role={msg['role']}")
             continue
 
         cleaned_msg = {"role": msg["role"], "content": msg["content"]}
@@ -113,16 +113,14 @@ def extract_and_update_memory(
             for tc in msg["tool_calls"]:
                 if isinstance(tc, dict) and "type" not in tc:
                     tc["type"] = "function"
-                    logger.warning(
-                        "⚠️ Added missing 'type' field to tool_call in extraction_history"
-                    )
+                    logger.warning(" Added missing 'type' field to tool_call in extraction_history")
 
     # 4. Call the AI (Notice we force JSON output!)
     try:
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",  # Or whichever Groq model you prefer
+            model="llama-3.1-8b-instant",
             messages=cast(Any, extraction_history),
-            response_format={"type": "json_object"},  # 👈 Crucial for data extraction
+            response_format={"type": "json_object"},  # Crucial for data extraction
             temperature=0.1,  # Keep it low so the AI doesn't get "creative" with facts
             max_tokens=300,
         )
@@ -130,7 +128,7 @@ def extract_and_update_memory(
         error_text = str(e)
         if "rate_limit_exceeded" in error_text or "tokens" in error_text:
             logger.warning(
-                "⚠️ Skipping memory update due to Groq TPM limit; chat response already delivered."
+                " Skipping memory update due to Groq TPM limit; chat response already delivered."
             )
             return
         raise
@@ -147,9 +145,6 @@ def extract_and_update_memory(
 
     except Exception as e:
         logger.warning(f"Failed to update memory: {e}")
-
-
-# prompts.py
 
 
 def get_counselor_prompt(memory_string: str = "{}") -> dict:

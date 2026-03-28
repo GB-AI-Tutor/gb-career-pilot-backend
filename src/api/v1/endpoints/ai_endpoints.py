@@ -30,7 +30,7 @@ def sse_data_event(payload: str) -> str:
     return "".join(f"data: {line}\n" for line in lines) + "\n"
 
 
-# --- 🔄 HELPER: Serialize Messages for Groq API ---
+# --- HELPER: Serialize Messages for Groq API ---
 def serialize_messages_for_groq(messages: list) -> list:
     """
     Convert messages to plain dicts for Groq API, whitelisting only expected fields.
@@ -53,10 +53,10 @@ def serialize_messages_for_groq(messages: list) -> list:
         cleaned_msg = {}
 
         if isinstance(msg_dict, dict):
-            # ✅ CRITICAL: Validate required 'role' field
+            # CRITICAL: Validate required 'role' field
             if not msg_dict.get("role") or msg_dict["role"] is None:
                 logger.error(
-                    f"❌ Message at index {i} missing/null 'role' field. Skipping to prevent API error."
+                    f" Message at index {i} missing/null 'role' field. Skipping to prevent API error."
                 )
                 continue
 
@@ -84,7 +84,7 @@ def serialize_messages_for_groq(messages: list) -> list:
 
         serialized.append(cleaned_msg)
 
-    logger.info(f"✅ Serialized {len(serialized)} valid messages for Groq API")
+    logger.info(f"Serialized {len(serialized)} valid messages for Groq API")
     return serialized
 
 
@@ -114,9 +114,6 @@ def normalize_search_universities_args(raw_args: dict) -> dict:
             args["max_fee"] = int(digits) if digits.isdigit() else None
 
     return args
-
-
-# ---
 
 
 @router.post("/test-api")
@@ -202,10 +199,10 @@ def chat(
     content_text = message.content or ""
 
     logger.info(
-        f"📨 First LLM Response - Tool Calls: {bool(message.tool_calls)}, Content Length: {len(content_text)}, Content: {content_text[:100]}"
+        f" First LLM Response - Tool Calls: {bool(message.tool_calls)}, Content Length: {len(content_text)}, Content: {content_text[:100]}"
     )
 
-    # --- 🛡️ THE HALLUCINATION INTERCEPTOR (IMPROVED) ---
+    # --- THE HALLUCINATION INTERCEPTOR (IMPROVED) ---
     if not message.tool_calls and content_text and "<function" in content_text.lower():
         # Support both formats:
         # 1) <function=search_universities>{...}</function>
@@ -217,7 +214,7 @@ def chat(
         matches.extend(re.findall(slash_pattern, content_text, re.DOTALL))
 
         if matches:
-            logger.info(f"🚨 Hallucination detected: {len(matches)} function call(s)")
+            logger.info(f"Hallucination detected: {len(matches)} function call(s)")
 
             mock_tool_calls = []
             for raw_name, raw_args in matches:
@@ -256,14 +253,14 @@ def chat(
                     logger.info("✅ Cleaned suspicious XML patterns from content")
     # ----------------------------------------
 
-    # --- 💾 HELPER: Save Final State ---
+    # --- HELPER: Save Final State ---
     # We use this helper inside our generators so we don't repeat code
     def save_final_state(final_text: str):
         db.table("messages").insert(
             {"role": "assistant", "conversation_id": conv_id, "content": final_text}
         ).execute()
 
-        # ⚠️ CRITICAL: Sanitize messages before memory extraction
+        # CRITICAL: Sanitize messages before memory extraction
         # Messages in final_history may contain tool_calls without 'type' field
         recent_context = serialize_messages_for_groq(
             final_history[-4:] + [{"role": "assistant", "content": final_text}]
@@ -322,7 +319,7 @@ def chat(
                 args = json.loads(raw_args)
             except json.JSONDecodeError:
                 logger.warning(
-                    f"⚠️ Invalid tool arguments JSON, defaulting to empty object: {raw_args}"
+                    f" Invalid tool arguments JSON, defaulting to empty object: {raw_args}"
                 )
                 args = {}
 
@@ -395,23 +392,23 @@ def chat(
                 try:
                     save_final_state(full_text)
                 except Exception as e:
-                    logger.error(f"❌ Error saving final state in tool stream: {e}", exc_info=True)
+                    logger.error(f" Error saving final state in tool stream: {e}", exc_info=True)
                     yield sse_data_event("[ERROR: Failed to save response]")
 
                 yield sse_data_event(f"[DONE_CONV_ID:{conv_id}]")
             except Exception as e:
-                logger.error(f"❌ Error in tool stream generation: {e}", exc_info=True)
+                logger.error(f" Error in tool stream generation: {e}", exc_info=True)
                 yield sse_data_event(f"[ERROR: {str(e)}]")
 
         return StreamingResponse(generate_tool_stream(), media_type="text/event-stream")
 
     else:
-        # 🌊 GENERATOR B: Instant Stream (No tools used)
+        # GENERATOR B: Instant Stream (No tools used)
         def generate_instant_stream():
             try:
                 full_text = message.content or ""
                 logger.info(
-                    f"🎯 Instant stream - No tools triggered. Returning {len(full_text)} chars"
+                    f" Instant stream - No tools triggered. Returning {len(full_text)} chars"
                 )
                 # Yield the whole text at once, but in the SSE format the frontend expects
                 yield sse_data_event(full_text)
@@ -419,14 +416,12 @@ def chat(
                 try:
                     save_final_state(full_text)
                 except Exception as e:
-                    logger.error(
-                        f"❌ Error saving final state in instant stream: {e}", exc_info=True
-                    )
+                    logger.error(f" Error saving final state in instant stream: {e}", exc_info=True)
                     yield sse_data_event("[ERROR: Failed to save response]")
 
                 yield sse_data_event(f"[DONE_CONV_ID:{conv_id}]")
             except Exception as e:
-                logger.error(f"❌ Error in instant stream generation: {e}", exc_info=True)
+                logger.error(f" Error in instant stream generation: {e}", exc_info=True)
                 yield sse_data_event(f"[ERROR: {str(e)}]")
 
         return StreamingResponse(generate_instant_stream(), media_type="text/event-stream")

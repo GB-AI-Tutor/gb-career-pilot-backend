@@ -1,6 +1,5 @@
 # API endpoint tests with proper unit and integration test patterns.
 # Unit Tests: Mock the database, test endpoint logic in isolation
-# Integration Tests: Use real database, test actual data persistence
 
 from unittest.mock import patch
 
@@ -163,89 +162,3 @@ def test_update_profile(authenticated_client, student_data, mock_supabase_client
         assert response.status_code == 200
         response_json = response.json()
         assert "Data Updated Successfully" in response_json["Detail"]
-
-
-# ============================================================================
-# INTEGRATION TESTS - Uses real database, tests actual persistence
-# ============================================================================
-# NOTE: These tests require a test Supabase project or test database
-# See explanation below for how to set up
-#
-# For now, these are EXAMPLE structures showing how integration tests should be written
-# ============================================================================
-
-
-class TestRegisterDuplicateEmailIntegration:
-    """
-    Integration test class for duplicate email handling.
-
-    WHAT IS AN INTEGRATION TEST?
-    - Uses REAL database (not mocked)
-    - Actually inserts/reads/updates data
-    - Tests the full system working together
-    - Slower than unit tests but more realistic
-
-    HOW TO SET UP DATABASE FOR TESTING:
-
-    Option 1: Supabase Test Project (Best for your setup)
-    -------
-    1. Create a separate Supabase project for testing
-    2. Set TEST_SUPABASE_URL and TEST_SUPABASE_KEY in .env.test
-    3. Create database fixture that points to test project
-    4. Tests use real Supabase but isolated to test project
-
-    Option 2: SQLite In-Memory (Fast local testing)
-    ------
-    1. Create a test SQLite database in memory
-    2. Much faster than cloud DB
-    3. Good for quick iteration
-
-    Option 3: Docker Container (Isolated real DB)
-    ------
-    1. Spin up PostgreSQL in Docker for tests
-    2. Real database, but containerized and throwaway
-    3. Slower startup but very realistic
-
-    For this project using Supabase, Option 1 is recommended.
-    """
-
-    def test_register_duplicate_email_integration(self, student_data):
-        """
-        Integration test: Actually insert user and test duplicate rejection.
-
-        WHEN TO RUN THIS TEST:
-        - After setting up a test Supabase project
-        - Use pytest.mark.integration decorator to separate from unit tests
-        - Run with: pytest -m integration
-
-        WHAT IT DOES:
-        1. Inserts a real user into test database
-        2. Tries to register same email again
-        3. Verifies endpoint returns 409
-        4. Cleans up data after test
-        """
-        # This is a PLACEHOLDER - requires test_supabase_client fixture
-        # which you'll need to create after setting up test project
-        pass
-
-        # Here's what the real test would look like:
-        #
-        # # Setup: Insert existing user into test database
-        # test_supabase_client.table("users").insert({
-        #     "id": "test-id-123",
-        #     "email": student_data["email"],
-        #     "full_name": "Existing User",
-        # }).execute()
-        #
-        # # Try to register same email
-        # response = client.post("/api/v1/users/Registeration", json=student_data)
-        #
-        # # Verify it was rejected
-        # assert response.status_code == 409
-        #
-        # # Cleanup is automatic with test database rollback
-
-
-# ============================================================================
-# TODO TESTS - Placeholder for other endpoint tests
-# ============================================================================

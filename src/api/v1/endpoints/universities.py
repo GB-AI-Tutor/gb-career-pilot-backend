@@ -112,9 +112,6 @@ def get_university_by_name(name: str, current_user: dict = Depends(get_current_u
     client = get_supabase_admin_client()
 
     university = client.table("universities").select("").eq("name", name.lower()).execute()
-    print("*" * 20)
-    print(university.data)
-    print("*" * 20)
 
     if not university.data:
         raise HTTPException(
@@ -178,8 +175,7 @@ class Sector(str, Enum):
 
 @router.get("/programs/search")
 def search_programs(
-    # student_percentage: float | None = None, # 👈 NEW: Optional student marks
-    quota_category: str = "Open Merit",  # 👈 NEW: Default to Open Merit
+    quota_category: str = "Open Merit",
     field: str | None = None,
     city: str | None = None,
     min_fee: int | None = None,
@@ -198,12 +194,11 @@ def search_programs(
 
     try:
         # 1. Base Query with Nested Join
-        # Notice we added admission_requirements(*) to grab the cut-offs!
         query = client.table("programs").select(
             "*, universities!inner(*), admission_requirements(*)", count=CountMethod.exact
         )
 
-        # 2. Apply Filters (Same as before)
+        # 2. Apply Filters
         if field:
             query = query.ilike("field_of_study", f"%{field}%")
         if min_fee is not None:
@@ -224,7 +219,7 @@ def search_programs(
         response = query.execute()
         programs_data = response.data
 
-        # 5. 🧠 The AI Counselor Logic: Inject Eligibility Tiers
+        # 5. The AI Counselor Logic: Inject Eligibility Tiers
         if student_percentage is not None:
             for program in programs_data:
                 # Set a default state
@@ -275,7 +270,7 @@ def search_programs(
 @router.post("/favorites/{university_id}")
 def add_favorite(
     university_id: int,
-    user: dict = Depends(get_current_user),  # Replace with your actual auth dependency
+    user: dict = Depends(get_current_user),
 ):
     client = database.get_supabase_client()
 
@@ -286,6 +281,7 @@ def add_favorite(
         return {"message": "University added to favorites successfully"}
     except Exception as e:
         error_msg = str(e).lower()
+
         # Handle the composite primary key violation if they double-click
         if "duplicate key value" in error_msg or "23505" in error_msg:
             return {"message": "University is already in favorites"}
