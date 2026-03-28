@@ -79,7 +79,7 @@ def verify_registration(token: str):
 @router.post("/login")
 @limiter.limit("5/minute")
 def login_user(request: Request, body: UserLogin):
-    client = database.get_supabase_admin_client()
+    client = database.get_supabase_client()
 
     exist = (
         client.table("users").select("id", "email", "password").eq("email", body.email).execute()
