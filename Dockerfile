@@ -1,5 +1,5 @@
 # 1. Use Bookworm (Stable Debian) to avoid 'Trixie' dependency issues
-FROM python:3.11-slim-bookworm
+FROM python:3.12-slim-bookworm
 
 # 2. Copy 'uv' from the official image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -34,13 +34,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 
 # 4. Install CPU-only Torch (MAKE SURE torch IS NOT IN requirements.txt!)
-RUN uv pip install --system torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# RUN uv pip install --system torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 # 5. Install the rest of the stack
 RUN uv pip install --system -r requirements.txt
 
 # 6. Install Chromium WITHOUT '--with-deps'
-RUN playwright install chromium
+# RUN python -m playwright install chromium
 
 # 7. Finalize and copy code
 COPY . .

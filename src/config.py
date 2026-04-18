@@ -24,7 +24,6 @@ class Settings(BaseSettings):
     EMAIL_APP_PASSWORD: str = Field(default="")
     ALGORITHM: str = Field(default="")
     RESEND_API_KEY: str = Field(default="")
-    BREVO_API: str = Field(default="")
     BRAVE_SEARCH_API_KEY: str | None = None
     ENVIRONMENT: str = "development"
     DEBUG: bool = False

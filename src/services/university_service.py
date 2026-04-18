@@ -2,12 +2,11 @@ from postgrest.types import CountMethod
 
 from src.database.database import get_supabase_admin_client
 
-client = get_supabase_admin_client()
-
 
 def get_universities_from_db(
     location: str | None = None, program_name: str | None = None, max_fee: int | None = None
 ):
+    client = get_supabase_admin_client()
     query = client.table("programs").select(
         "*, universities!inner(*), admission_requirements(*)", count=CountMethod.exact
     )

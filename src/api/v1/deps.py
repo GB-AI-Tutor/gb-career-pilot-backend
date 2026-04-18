@@ -25,9 +25,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(h
         payload = decode_jwt_token(token)
 
         user_id = payload.get("sub")
-        print("*" * 20)
-        print(payload, " : Did we reach here?")
-        print("*" * 20)
+
         if user_id is None:
             raise credentials_exception
 
