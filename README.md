@@ -80,7 +80,6 @@ GB Career Pilot Backend is a production-ready FastAPI application powering an AI
 
    python -m pip install uv
 
-
    # Create virtual environment
    python -m venv venv
    source venv/bin/activate  # Windows: venv\Scripts\activate
@@ -88,11 +87,9 @@ GB Career Pilot Backend is a production-ready FastAPI application powering an AI
    # Install dependencies
 
    pip install -r requirements.txt
-
    uv pip install -r requirements.txt
 
    uv run uvicorn src.main:app --reload
-
 
    # Create virtual environment
    python -m venv venv
