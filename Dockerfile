@@ -39,8 +39,6 @@ COPY requirements.txt .
 # 5. Install the rest of the stack
 RUN uv pip install --system -r requirements.txt
 
-# 6. Install Chromium WITHOUT '--with-deps'
-# RUN python -m playwright install chromium
 
 # 7. Finalize and copy code
 COPY . .
