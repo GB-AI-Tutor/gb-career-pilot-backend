@@ -1,14 +1,15 @@
-# Increase timeout for the first run just in case
-export UV_HTTP_TIMEOUT=300
+git clone https://github.com/GB-AI-Tutor/gb-career-pilot-backend.git
 
-python -m pip install uv # Windows
+cd gb-career-pilot-backend
 
-# Step 1: Install the lightweight CPU-only Torch ecosystem
-uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+python -m pip install uv 
 
-# Step 2: Install the rest of the GB Career Pilot stack
+# Create virtual environment
+uv venv venv
+
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
 uv pip install -r requirements.txt
 
-uv pip install pre-commit
-
-uv run pre-commit install
+uv run uvicorn src.main:app --reload
