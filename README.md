@@ -76,25 +76,23 @@ GB Career Pilot Backend is a production-ready FastAPI application powering an AI
    ```bash
    git clone https://github.com/GB-AI-Tutor/gb-career-pilot-backend.git
    cd gb-career-pilot-backend
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
+
 
    python -m pip install uv
->>>>>>> main
+
 
    # Create virtual environment
    python -m venv venv
    source venv/bin/activate  # Windows: venv\Scripts\activate
 
    # Install dependencies
-<<<<<<< HEAD
+
    pip install -r requirements.txt
-=======
+
    uv pip install -r requirements.txt
 
    uv run uvicorn src.main:app --reload
-=======
+
 
    # Create virtual environment
    python -m venv venv
@@ -102,8 +100,7 @@ GB Career Pilot Backend is a production-ready FastAPI application powering an AI
 
    # Install dependencies
    pip install -r requirements.txt
->>>>>>> Async_Func
->>>>>>> main
+
    ```
 
 2. **Configure environment**
