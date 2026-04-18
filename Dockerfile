@@ -41,10 +41,14 @@ RUN uv pip install --system -r requirements.txt
 
 # 6. Install Chromium WITHOUT '--with-deps'
 <<<<<<< HEAD
+<<<<<<< HEAD
 # RUN playwright install chromium
 =======
 # RUN python -m playwright install chromium
 >>>>>>> e302e95 ( Adding Async functionality)
+=======
+# RUN python -m playwright install chromium
+>>>>>>> Async_Func
 
 # 7. Finalize and copy code
 COPY . .
