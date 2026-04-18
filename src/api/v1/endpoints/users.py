@@ -42,9 +42,13 @@ def register_user(request: Request, body: UserRegister):
     exp = datetime.now(UTC) + timedelta(minutes=15)
 
     token = create_access_token(user_data, exp)
-
-    send_verification_email(body.email, token)
-
+    try:
+        send_verification_email(body.email, token)
+    except Exception as e:
+        print("error: ", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error :{e}"
+        ) from e
     return {"Message": " Verification mail has been send.", **user_data}
 
 

@@ -45,4 +45,7 @@ pytest==8.0.2
 pytest-asyncio==0.23.5
 
 slowapi==0.1.9
+<<<<<<< HEAD
 
+=======
+>>>>>>> e302e95 ( Adding Async functionality)

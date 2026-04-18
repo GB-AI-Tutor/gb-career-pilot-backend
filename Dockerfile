@@ -1,5 +1,5 @@
 # 1. Use Bookworm (Stable Debian) to avoid 'Trixie' dependency issues
-FROM python:3.11-slim-bookworm
+FROM python:3.12-slim-bookworm
 
 # 2. Copy 'uv' from the official image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -40,7 +40,11 @@ COPY requirements.txt .
 RUN uv pip install --system -r requirements.txt
 
 # 6. Install Chromium WITHOUT '--with-deps'
+<<<<<<< HEAD
 # RUN playwright install chromium
+=======
+# RUN python -m playwright install chromium
+>>>>>>> e302e95 ( Adding Async functionality)
 
 # 7. Finalize and copy code
 COPY . .

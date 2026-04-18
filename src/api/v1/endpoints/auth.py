@@ -4,14 +4,13 @@ from datetime import UTC, datetime, timedelta
 import jwt
 import resend
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from jwt import InvalidTokenError as JWTError
 from loguru import logger
 
 from src.api.v1.deps import get_current_user
 from src.config import settings
 from src.database import database
-from src.database.database import get_supabase_admin_client
 from src.rate_limiter import limiter
 from src.schemas.users import ForgotPasswordRequest, UserLogin
 from src.utils.security import (
@@ -48,15 +47,20 @@ def send_verification_email(receiver_email: str, token: str):
 
 
 @router.post("/verify")
-def verify_registration(token: str):
-    client = database.get_supabase_admin_client()
+async def verify_registration(token: str):
+    client = await database.get_supabase_admin_client()
 
     try:
         # 1. Decode token. Automatically throws error if expired or tampered with.
         user_data = decode_jwt_token(token)
 
+        existing_user = await client.table("users").select("id").eq("id", user_data["id"]).execute()
+
+        if existing_user.data:
+            return {"message": "Email already verified. You can login now."}
+
         # 2. Finally, insert the verified data into Supabase
-        client.table("users").insert(user_data).execute()
+        await client.table("users").insert(user_data).execute()
         return {"message": "Email verified and account created successfully!"}
 
     except jwt.ExpiredSignatureError as e:
@@ -69,20 +73,27 @@ def verify_registration(token: str):
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid verification link."
         ) from e
     except Exception as e:
-        # Handles database errors (e.g., email already exists if they click twice)
+        error_text = str(e)
+        if "duplicate key value violates unique constraint" in error_text:
+            return {"message": "Email already verified. You can login now."}
+
+        # Handles other database errors
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Database error: {str(e)}"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Database error: {error_text}"
         ) from e
 
 
 # Login endpoint
 @router.post("/login")
 @limiter.limit("5/minute")
-def login_user(request: Request, body: UserLogin):
-    client = database.get_supabase_client()
+async def login_user(request: Request, body: UserLogin, user_record: Response):
+    client = await database.get_supabase_client()
 
     exist = (
-        client.table("users").select("id", "email", "password").eq("email", body.email).execute()
+        await client.table("users")
+        .select("id", "email", "password")
+        .eq("email", body.email)
+        .execute()
     )
 
     # hash_passoword = get_password_hash(body.password)
@@ -91,16 +102,16 @@ def login_user(request: Request, body: UserLogin):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with {body.email} email not found. Kindly register first.",
         )
-    response = exist.data[0]
-    password = response["password"]
+    user_record = exist.data[0]
+    password = user_record["password"]
 
     is_valid = verify_password(body.password, password)
 
     if not is_valid:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=" wrong password")
     user_data = {
-        "sub": str(response["id"]),
-        "email": (response["email"]),
+        "sub": str(user_record["id"]),
+        "email": (user_record["email"]),
     }
     expires_date = datetime.now(UTC) + timedelta(hours=settings.ACCESS_TOKEN_TIME)
 
@@ -113,15 +124,31 @@ def login_user(request: Request, body: UserLogin):
 
     #  Long lived refresh token
     refresh_token = create_refresh_access_token(user_data, refresh_token_expires_date)
-    client.table("users").update({"refresh_token": refresh_token}).eq(
-        "id", response["id"]
-    ).execute()
+    await (
+        client.table("users")
+        .update({"refresh_token": refresh_token})
+        .eq("id", user_record["id"])
+        .execute()
+    )
+    user_record.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=settings.REFRESH_ACCESS_TOKEN_TIME * 24 * 3600,
+    )
 
-    return {"access_token": access_token, "refresh_token": refresh_token, "Token_type": "bearer"}
+    return {"access_token": access_token, "Token_type": "bearer"}
 
 
 @router.post("/refresh")
-def refresh_access_token(refresh_token: str):
+async def refresh_access_token(refresh_token: str = Cookie(None)):
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=" No refresh token provided"
+        )
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail=" Could not validate the refresh token",
@@ -140,9 +167,13 @@ def refresh_access_token(refresh_token: str):
         raise credentials_exception from e
 
     # checking user still exist
-    client = database.get_supabase_client()
+    client = await database.get_supabase_client()
     response = (
-        client.table("users").select("id", "refresh_token").eq("id", user_id).single().execute()
+        await client.table("users")
+        .select("id", "refresh_token")
+        .eq("id", user_id)
+        .single()
+        .execute()
     )
 
     if not response:
@@ -164,16 +195,18 @@ def refresh_access_token(refresh_token: str):
 
 
 @router.post("/logout")
-def logout_user(current_user: dict = Depends(get_current_user)):
-    client = database.get_supabase_client()
-    client.table("users").update({"refresh_token": None}).eq("id", current_user["id"]).execute()
+async def logout_user(current_user: dict = Depends(get_current_user)):
+    client = await database.get_supabase_client()
+    await (
+        client.table("users").update({"refresh_token": None}).eq("id", current_user["id"]).execute()
+    )
     return {"Message": " Log out successfully."}
 
 
 @router.post("/forgot-password")
 @limiter.limit("3/minute")  # Very strict limit to prevent spam emails
-def forgot_password(request: Request, body: ForgotPasswordRequest):
-    db = get_supabase_admin_client()
+async def forgot_password(request: Request, body: ForgotPasswordRequest):
+    db = await database.get_supabase_admin_client()
 
     try:
         # Supabase automatically generates the secure token and sends the email!

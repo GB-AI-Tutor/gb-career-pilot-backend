@@ -3,7 +3,7 @@ import logging
 import re
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 
 from src.api.v1.deps import get_current_user, rate_limiter
@@ -21,6 +21,64 @@ from src.utils.ai_client import client, get_basic_completion
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+@router.get("/conversations")
+def list_conversations(current_user: dict = Depends(get_current_user)):
+    db = get_supabase_admin_client()
+
+    try:
+        conv_response = (
+            db.table("conversations")
+            .select("id, title, created_at")
+            .eq("user_id", current_user["id"])
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        conversations = conv_response.data or []
+        if not conversations:
+            return {"conversations": []}
+
+        conv_ids = [conv["id"] for conv in conversations if conv.get("id")]
+        latest_messages_by_conv = {}
+
+        if conv_ids:
+            msg_response = (
+                db.table("messages")
+                .select("conversation_id, content, created_at")
+                .in_("conversation_id", conv_ids)
+                .order("created_at", desc=True)
+                .execute()
+            )
+
+            for message in msg_response.data or []:
+                conversation_id = message.get("conversation_id")
+                if conversation_id and conversation_id not in latest_messages_by_conv:
+                    latest_messages_by_conv[conversation_id] = message
+
+        payload = []
+        for conversation in conversations:
+            latest_message = latest_messages_by_conv.get(conversation["id"], {})
+            payload.append(
+                {
+                    "id": conversation["id"],
+                    "title": conversation.get("title") or "New Conversation",
+                    "preview": latest_message.get("content") or "",
+                    "created_at": conversation.get("created_at"),
+                    "last_message_at": latest_message.get("created_at")
+                    or conversation.get("created_at"),
+                }
+            )
+
+        return {"conversations": payload}
+
+    except Exception as e:
+        logger.error(f"Failed to fetch conversations for user {current_user['id']}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load conversations",
+        ) from e
 
 
 def sse_data_event(payload: str) -> str:
@@ -95,6 +153,12 @@ def normalize_search_universities_args(raw_args: dict) -> dict:
     """
     args = dict(raw_args or {})
 
+    if not args.get("location") and args.get("location_preferences"):
+        args["location"] = args.get("location_preferences")
+
+    if not args.get("max_fee") and args.get("financial_constraints"):
+        args["max_fee"] = args.get("financial_constraints")
+
     for key in ("location", "program_name"):
         value = args.get(key)
         if isinstance(value, str):
@@ -113,7 +177,11 @@ def normalize_search_universities_args(raw_args: dict) -> dict:
             digits = cleaned.replace(",", "")
             args["max_fee"] = int(digits) if digits.isdigit() else None
 
-    return args
+    return {
+        "location": args.get("location"),
+        "program_name": args.get("program_name"),
+        "max_fee": args.get("max_fee"),
+    }
 
 
 @router.post("/test-api")

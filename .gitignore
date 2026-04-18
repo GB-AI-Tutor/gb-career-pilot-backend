@@ -7,6 +7,12 @@
 .env.*.local
 **/.env
 **/.env.*
+docs/*
+.tmp_firecrawl_local/*
+.firecrawl/*
+.github/copilot-instructions.md
+.~lock.karachi_universities.csv#
+DataScraping/
 
 # Python
 __pycache__/

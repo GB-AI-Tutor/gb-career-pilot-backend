@@ -6,11 +6,11 @@ from uuid import UUID
 from src.database.database import get_supabase_admin_client
 from src.utils.ai_client import client
 
-db = get_supabase_admin_client()
 logger = logging.getLogger(__name__)
 
 
 def convertion_history(conversation_id: UUID | str, limit_count: int = 15):
+    db = get_supabase_admin_client()
     conversation_id = str(conversation_id)
     # Pagination is also added to get most recent message not all mesasge history
     response = (
@@ -120,7 +120,8 @@ def extract_and_update_memory(
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=cast(Any, extraction_history),
-            response_format={"type": "json_object"},  # Crucial for data extraction
+            # Crucial for data extraction
+            response_format={"type": "json_object"},
             temperature=0.1,  # Keep it low so the AI doesn't get "creative" with facts
             max_tokens=300,
         )
