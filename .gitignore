@@ -13,6 +13,7 @@ docs/*
 .github/copilot-instructions.md
 .~lock.karachi_universities.csv#
 DataScraping/
+.worktrees/
 
 # Python
 __pycache__/
