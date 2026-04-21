@@ -6,12 +6,12 @@ router = APIRouter()
 
 
 @router.get("/stats")
-def stats():
-    db = get_supabase_admin_client()
+async def stats():
+    db = await get_supabase_admin_client()
 
-    universities = db.table("universities").select("name").execute()
+    universities = await db.table("universities").select("name").execute()
     uni_names = universities.model_dump()["data"]
-    programs = db.table("programs").select("name").execute()
+    programs = await db.table("programs").select("name").execute()
     programs_name = programs.model_dump()["data"]
 
     universities_names = []

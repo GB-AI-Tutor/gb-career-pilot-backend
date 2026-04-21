@@ -15,11 +15,11 @@ router = APIRouter()
 
 @router.post("/Registeration")
 @limiter.limit("5/minute")
-def register_user(request: Request, body: UserRegister):
-    client = database.get_supabase_client()
+async def register_user(request: Request, body: UserRegister):
+    client = await database.get_supabase_client()
 
     # handling duplicate emails
-    existing_user = client.table("users").select("email").eq("email", body.email).execute()
+    existing_user = await client.table("users").select("email").eq("email", body.email).execute()
 
     if existing_user.data:
         # 409 Conflict is the industry standard for duplicate data
@@ -53,16 +53,16 @@ def register_user(request: Request, body: UserRegister):
 
 
 @router.get("/me")
-def current_user_info(current_user: dict = Depends(get_current_user)):
+async def current_user_info(current_user: dict = Depends(get_current_user)):
     return current_user
 
 
 # for update, user first should be login.
 @router.put("/update_user_info")
-def update_user_date(body: UserUpdate, current_user: dict = Depends(get_current_user)):
+async def update_user_date(body: UserUpdate, current_user: dict = Depends(get_current_user)):
     data = body.model_dump(exclude_none=True)
-    client = database.get_supabase_client()
+    client = await database.get_supabase_client()
 
-    client.table("users").update(data).eq("id", current_user["id"]).execute()
+    await client.table("users").update(data).eq("id", current_user["id"]).execute()
     return {"Detail": "Data Updated Successfully", "data": data}
     # first we check such user exist

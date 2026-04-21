@@ -1,6 +1,5 @@
 from dotenv import load_dotenv
-from supabase.async_client import AsyncClient
-from supabase.client import create_client
+from supabase.client import AsyncClient, create_async_client
 
 from src.config import settings
 
@@ -14,8 +13,8 @@ async def get_supabase_client() -> AsyncClient:
     if not url or not key:
         raise ValueError("Missing Supabase credentials")
 
-    return await create_client(url, key)
+    return await create_async_client(url, key)
 
 
 async def get_supabase_admin_client() -> AsyncClient:
-    return await create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_KEY)
+    return await create_async_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_KEY)

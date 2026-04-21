@@ -21,27 +21,27 @@ class UniversitySortField(str, Enum):
 
 
 @router.post("/Add_university")
-def add_university(body: UniversityCreate):
-    client = get_supabase_admin_client()
+async def add_university(body: UniversityCreate):
+    client = await get_supabase_admin_client()
     data = body.model_dump(mode="json")
 
-    name = client.table("universities").select("*").eq("name", data.get("name")).execute()
+    name = await client.table("universities").select("*").eq("name", data.get("name")).execute()
 
     if name.data:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail=" University already exist"
         )
 
-    client.table("universities").insert(data).execute()
+    await client.table("universities").insert(data).execute()
 
     return {"Detail": " University added successfully"}
 
 
 @router.patch("/update_university/{name}")
-def update_university(name: str, body: UniversityUpdate):
-    client = get_supabase_admin_client()
+async def update_university(name: str, body: UniversityUpdate):
+    client = await get_supabase_admin_client()
 
-    user = client.table("universities").select("*").eq("name", name).execute()
+    user = await client.table("universities").select("*").eq("name", name).execute()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=" There is not such universiy"
@@ -49,28 +49,28 @@ def update_university(name: str, body: UniversityUpdate):
 
     data = body.model_dump(exclude_none=True, mode="json")
 
-    client.table("universities").update(data).eq("name", name).execute()
+    await client.table("universities").update(data).eq("name", name).execute()
 
     return {"Detail": f" Data of universitie :{name} updated successfully"}
 
 
 @router.delete("/delete_universitiy")
-def delete_university(name: str):
-    client = get_supabase_admin_client()
-    user = client.table("universities").select("*").eq("name", name).execute()
+async def delete_university(name: str):
+    client = await get_supabase_admin_client()
+    user = await client.table("universities").select("*").eq("name", name).execute()
 
     if not user.data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=" No such university found"
         )
 
-    client.table("universities").delete().eq("name", name).execute()
+    await client.table("universities").delete().eq("name", name).execute()
 
     return {"Detail": "University record deleted successfully"}
 
 
 @router.get("/get_university")
-def get_universities(
+async def get_universities(
     limit: int = 10,
     offset: int = 0,
     sort_by: UniversitySortField = UniversitySortField.ranking_national,
@@ -79,12 +79,11 @@ def get_universities(
 ):
     is_desc = order.lower() == "desc"
     range_end = offset + limit - 1
-    client = get_supabase_admin_client()
-    print("Did we reach here ?")
+    client = await get_supabase_admin_client()
 
     try:
         query = (
-            client.table("universities")
+            await client.table("universities")
             .select("*", count=CountMethod.exact)
             .order(sort_by.value, desc=is_desc)
             .range(offset, range_end)
@@ -108,10 +107,10 @@ def get_universities(
 
 
 @router.get("/get_university_by_name")
-def get_university_by_name(name: str, current_user: dict = Depends(get_current_user)):
-    client = get_supabase_admin_client()
+async def get_university_by_name(name: str, current_user: dict = Depends(get_current_user)):
+    client = await get_supabase_admin_client()
 
-    university = client.table("universities").select("").eq("name", name.lower()).execute()
+    university = await client.table("universities").select("").eq("name", name.lower()).execute()
 
     if not university.data:
         raise HTTPException(
@@ -119,7 +118,7 @@ def get_university_by_name(name: str, current_user: dict = Depends(get_current_u
         )
     uni_id = university.data[0]["id"]
 
-    programs = client.table("programs").select("*").eq("university_id", uni_id).execute()
+    programs = await client.table("programs").select("*").eq("university_id", uni_id).execute()
     programs_data = programs.model_dump()
     program_data = programs_data["data"]
 
@@ -127,7 +126,7 @@ def get_university_by_name(name: str, current_user: dict = Depends(get_current_u
 
     for i in range(0, len(program_data)):
         admission_requirement = (
-            client.table("admission_requirements")
+            await client.table("admission_requirements")
             .select(
                 "matric_weightage,fsc_weightage,test_weightage,last_closing_aggregate,quota_category"
             )
@@ -143,10 +142,12 @@ def get_university_by_name(name: str, current_user: dict = Depends(get_current_u
 @router.get(
     "/university/{id}/programs",
 )
-def programs_by_university(id: int, field: str, current_user: dict = Depends(get_current_user)):
-    client = get_supabase_admin_client()
+async def programs_by_university(
+    id: int, field: str, current_user: dict = Depends(get_current_user)
+):
+    client = await get_supabase_admin_client()
 
-    programs = client.table("programs").select("*").eq("university_id", id).execute()
+    programs = await client.table("programs").select("*").eq("university_id", id).execute()
     programs_data = programs.model_dump()
     program_data = programs_data["data"]
 
@@ -154,7 +155,7 @@ def programs_by_university(id: int, field: str, current_user: dict = Depends(get
 
     for i in range(0, len(program_data)):
         admission_requirement = (
-            client.table("admission_requirements")
+            await client.table("admission_requirements")
             .select(
                 "matric_weightage,fsc_weightage,test_weightage,last_closing_aggregate,quota_category"
             )
@@ -174,7 +175,7 @@ class Sector(str, Enum):
 
 
 @router.get("/programs/search")
-def search_programs(
+async def search_programs(
     quota_category: str = "Open Merit",
     field: str | None = None,
     city: str | None = None,
@@ -190,7 +191,7 @@ def search_programs(
     is_desc = order.lower() == "desc"
     range_end = offset + limit - 1
     student_percentage = current_user["fsc_percentage"]
-    client = get_supabase_admin_client()
+    client = await get_supabase_admin_client()
 
     try:
         # 1. Base Query with Nested Join
@@ -216,7 +217,7 @@ def search_programs(
         query = query.range(offset, range_end)
 
         # 4. Execute the query
-        response = query.execute()
+        response = await query.execute()
         programs_data = response.data
 
         # 5. The AI Counselor Logic: Inject Eligibility Tiers
@@ -268,16 +269,18 @@ def search_programs(
 
 
 @router.post("/favorites/{university_id}")
-def add_favorite(
+async def add_favorite(
     university_id: int,
     user: dict = Depends(get_current_user),
 ):
-    client = database.get_supabase_client()
+    client = await database.get_supabase_client()
 
     try:
-        client.table("user_favorite_universities").insert(
-            {"user_id": user["id"], "university_id": university_id}
-        ).execute()
+        await (
+            client.table("user_favorite_universities")
+            .insert({"user_id": user["id"], "university_id": university_id})
+            .execute()
+        )
         return {"message": "University added to favorites successfully"}
     except Exception as e:
         error_msg = str(e).lower()
@@ -292,12 +295,12 @@ def add_favorite(
 
 
 @router.delete("/favorites/{university_id}")
-def remove_favorite(university_id: int, user: dict = Depends(get_current_user)):
-    client = database.get_supabase_client()
+async def remove_favorite(university_id: int, user: dict = Depends(get_current_user)):
+    client = await database.get_supabase_client()
 
     try:
         response = (
-            client.table("user_favorite_universities")
+            await client.table("user_favorite_universities")
             .delete()
             .match({"user_id": user["id"], "university_id": university_id})
             .execute()
@@ -317,14 +320,14 @@ def remove_favorite(university_id: int, user: dict = Depends(get_current_user)):
 
 
 @router.get("/favorites")
-def get_favorites(user: dict = Depends(get_current_user)):
-    client = database.get_supabase_client()
+async def get_favorites(user: dict = Depends(get_current_user)):
+    client = await database.get_supabase_client()
 
     try:
         # We use an !inner join to fetch the actual university details
         # right alongside the bookmark record
         response = (
-            client.table("user_favorite_universities")
+            await client.table("user_favorite_universities")
             .select("created_at, universities!inner(*)")
             .eq("user_id", user["id"])
             .execute()
@@ -337,4 +340,17 @@ def get_favorites(user: dict = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch favorites"
+        ) from e
+
+
+@router.get("/programs")
+async def get_programs(current_user: dict = Depends(get_current_user)):
+    client = await database.get_supabase_admin_client()
+
+    try:
+        programs = await client.table("programs").select("*").execute()
+        return {"data": programs.data}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch programs"
         ) from e

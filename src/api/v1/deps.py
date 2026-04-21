@@ -32,10 +32,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(h
     except DecodeError as e:
         raise credentials_exception from e
 
-    client = get_supabase_client()
+    client = await get_supabase_client()
 
     try:
-        response = client.table("users").select("*").eq("id", user_id).single().execute()
+        response = await client.table("users").select("*").eq("id", user_id).single().execute()
         if not response.data:
             raise HTTPException(status_code=404, detail="User not found")
         return response.data
@@ -43,8 +43,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(h
         raise credentials_exception from e
 
 
-def rate_limiter(current_user: dict = Depends(get_current_user)):
-    db = get_supabase_admin_client()
+async def rate_limiter(current_user: dict = Depends(get_current_user)):
+    db = await get_supabase_admin_client()
     user_id = current_user["id"]
 
     # Calculate the timestamp for 1 hour ago
@@ -52,7 +52,7 @@ def rate_limiter(current_user: dict = Depends(get_current_user)):
 
     # Query Supabase: Count messages sent by this user's conversations in the last hour
     response = (
-        db.table("conversations")
+        await db.table("conversations")
         .select("id, messages!inner(id)")
         .eq("user_id", user_id)
         .gte("messages.created_at", one_hour_ago)

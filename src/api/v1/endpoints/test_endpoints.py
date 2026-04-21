@@ -28,13 +28,13 @@ router = APIRouter()
 
 
 @router.get("/tests", response_model=list[TestlistResponse])
-def list_tests(
+async def list_tests(
     exam_type: str | None = None,
     type: str | None = None,
     current_user: dict = Depends(get_current_user),
 ):
     """List all available tests (filterable by exam_type or type)"""
-    db = get_supabase_admin_client()
+    db = await get_supabase_admin_client()
     query = db.table("tests").select("*").eq("is_published", True)
 
     if exam_type:
@@ -42,7 +42,7 @@ def list_tests(
     if type:
         query = query.eq("type", type)
 
-    result = query.order("created_at", desc=True).execute()
+    result = await query.order("created_at", desc=True).execute()
     return result.data
 
 
@@ -50,10 +50,10 @@ def list_tests(
 # GET /tests/{test_id} - Get test details
 # ═══════════════════════════════════════════════════════════════
 @router.get("/tests/{test_id}", response_model=TestDetailResponse)
-def get_test(test_id: UUID, current_user: dict = Depends(get_current_user)):
+async def get_test(test_id: UUID, current_user: dict = Depends(get_current_user)):
     """Get test metadata(without questions)"""
-    db = get_supabase_admin_client()
-    result = db.table("tests").select("*").eq("id", str(test_id)).single().execute()
+    db = await get_supabase_admin_client()
+    result = await db.table("tests").select("*").eq("id", str(test_id)).single().execute()
 
     if not result.data:
         raise HTTPException(status_code=404, detail="Test not found")
@@ -65,13 +65,13 @@ def get_test(test_id: UUID, current_user: dict = Depends(get_current_user)):
 # POST /tests/{test_id}/start - Start a new test attempt
 # ═══════════════════════════════════════════════════════════════
 @router.post("/tests/{test_id}/start", response_model=TestStartResponse)
-def start_test(test_id: UUID, current_user: dict = Depends(get_current_user)):
+async def start_test(test_id: UUID, current_user: dict = Depends(get_current_user)):
     """Start a new test attempt and return attempt_id + questions"""
-    db = get_supabase_admin_client()
+    db = await get_supabase_admin_client()
     user_id = current_user["id"]
 
     # Get test details
-    test = db.table("tests").select("*").eq("id", str(test_id)).single().execute()
+    test = await db.table("tests").select("*").eq("id", str(test_id)).single().execute()
 
     if not test.data:
         raise HTTPException(status_code=404, detail="Test not found")
@@ -82,7 +82,7 @@ def start_test(test_id: UUID, current_user: dict = Depends(get_current_user)):
 
     # Create attempt
     attempt = (
-        db.table("test_attempts")
+        await db.table("test_attempts")
         .insert(
             {
                 "user_id": user_id,
@@ -96,7 +96,7 @@ def start_test(test_id: UUID, current_user: dict = Depends(get_current_user)):
 
     # Get questions
     questions = (
-        db.table("questions")
+        await db.table("questions")
         .select("*")
         .eq("test_id", str(test_id))
         .order("order_number")
@@ -115,25 +115,32 @@ def start_test(test_id: UUID, current_user: dict = Depends(get_current_user)):
 # PATCH /tests/attempts/{attempt_id} - Save progress (autosave)
 # ═══════════════════════════════════════════════════════════════
 @router.patch("/tests/attempts/{attempt_id}")
-def update_attempt(
+async def update_attempt(
     attempt_id: UUID, update: TestAttemptUpdate, current_user: dict = Depends(get_current_user)
 ):
     """Update answers (autosave during test)"""
-    db = get_supabase_admin_client()
+    db = await get_supabase_admin_client()
     user_id = current_user["id"]
 
     # Verify ownership
     attempt = (
-        db.table("test_attempts").select("user_id").eq("id", str(attempt_id)).single().execute()
+        await db.table("test_attempts")
+        .select("user_id")
+        .eq("id", str(attempt_id))
+        .single()
+        .execute()
     )
 
     if not attempt.data or attempt.data["user_id"] != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     # Update answers
-    db.table("test_attempts").update({"answers": update.answers}).eq(
-        "id", str(attempt_id)
-    ).execute()
+    await (
+        db.table("test_attempts")
+        .update({"answers": update.answers})
+        .eq("id", str(attempt_id))
+        .execute()
+    )
 
     return {"message": "Progress saved"}
 
@@ -142,16 +149,20 @@ def update_attempt(
 # POST /tests/attempts/{attempt_id}/submit - Submit test
 # ═══════════════════════════════════════════════════════════════
 @router.post("/tests/attempts/{attempt_id}/submit", response_model=TestResultResponse)
-def submit_test(
+async def submit_test(
     attempt_id: UUID, submit_data: TestSubmitRequest, current_user: dict = Depends(get_current_user)
 ):
     """Submit test and calculate score"""
-    db = get_supabase_admin_client()
+    db = await get_supabase_admin_client()
     user_id = current_user["id"]
 
     # Get attempt
     attempt = (
-        db.table("test_attempts").select("*, tests(*)").eq("id", str(attempt_id)).single().execute()
+        await db.table("test_attempts")
+        .select("*, tests(*)")
+        .eq("id", str(attempt_id))
+        .single()
+        .execute()
     )
 
     if not attempt.data:
@@ -165,7 +176,7 @@ def submit_test(
 
     # Get correct answers
     questions = (
-        db.table("questions")
+        await db.table("questions")
         .select("id, correct_option")
         .eq("test_id", attempt.data["test_id"])
         .execute()
@@ -189,19 +200,24 @@ def submit_test(
     time_taken = submit_data.time_taken_seconds
 
     # Update attempt
-    db.table("test_attempts").update(
-        {
-            "answers": answers,
-            "submitted_at": datetime.now().isoformat(),
-            "is_completed": True,
-            "score": correct_count,
-            "time_taken_seconds": time_taken,
-            "accuracy": accuracy,
-        }
-    ).eq("id", str(attempt_id)).execute()
+    await (
+        db.table("test_attempts")
+        .update(
+            {
+                "answers": answers,
+                "submitted_at": datetime.now().isoformat(),
+                "is_completed": True,
+                "score": correct_count,
+                "time_taken_seconds": time_taken,
+                "accuracy": accuracy,
+            }
+        )
+        .eq("id", str(attempt_id))
+        .execute()
+    )
 
     # Update user stats
-    update_user_stats(
+    await update_user_stats(
         db, user_id, correct_count, wrong_count, total, correct_count, str(attempt.data["test_id"])
     )
 
@@ -220,14 +236,18 @@ def submit_test(
 # GET /tests/attempts/{attempt_id}/results - View detailed results
 # ═══════════════════════════════════════════════════════════════
 @router.get("/tests/attempts/{attempt_id}/results", response_model=DetailedResultsResponse)
-def get_results(attempt_id: UUID, current_user: dict = Depends(get_current_user)):
+async def get_results(attempt_id: UUID, current_user: dict = Depends(get_current_user)):
     """Get detailed results with correct answers"""
-    db = get_supabase_admin_client()
+    db = await get_supabase_admin_client()
     user_id = current_user["id"]
 
     # Get attempt with test info
     attempt = (
-        db.table("test_attempts").select("*, tests(*)").eq("id", str(attempt_id)).single().execute()
+        await db.table("test_attempts")
+        .select("*, tests(*)")
+        .eq("id", str(attempt_id))
+        .single()
+        .execute()
     )
 
     if not attempt.data:
@@ -241,7 +261,7 @@ def get_results(attempt_id: UUID, current_user: dict = Depends(get_current_user)
 
     # Get questions with user's answers
     questions = (
-        db.table("questions")
+        await db.table("questions")
         .select("*")
         .eq("test_id", attempt.data["test_id"])
         .order("order_number")
@@ -272,16 +292,16 @@ def get_results(attempt_id: UUID, current_user: dict = Depends(get_current_user)
 # GET /users/me/stats - Get user statistics
 # ═══════════════════════════════════════════════════════════════
 @router.get("/users/me/stats", response_model=UserStatsResponse)
-def get_user_stats(current_user: dict = Depends(get_current_user)):
+async def get_user_stats(current_user: dict = Depends(get_current_user)):
     """Get user's test prep statistics"""
-    db = get_supabase_admin_client()
+    db = await get_supabase_admin_client()
     user_id = current_user["id"]
 
-    stats = db.table("user_stats").select("*").eq("user_id", user_id).maybe_single().execute()
+    stats = await db.table("user_stats").select("*").eq("user_id", user_id).maybe_single().execute()
 
     if not stats:
         # Create initial stats
-        db.table("user_stats").insert({"user_id": user_id}).execute()
+        await db.table("user_stats").insert({"user_id": user_id}).execute()
         return UserStatsResponse(user_id=user_id, best_test_id=None, last_attempt_at=None)
 
     return stats.data
@@ -291,13 +311,13 @@ def get_user_stats(current_user: dict = Depends(get_current_user)):
 # GET /users/me/attempts - Get attempt history
 # ═══════════════════════════════════════════════════════════════
 @router.get("/users/me/attempts", response_model=list[AttemptHistoryResponse])
-def get_user_attempts(limit: int = 20, current_user: dict = Depends(get_current_user)):
+async def get_user_attempts(limit: int = 20, current_user: dict = Depends(get_current_user)):
     """Get user's test attempt history"""
-    db = get_supabase_admin_client()
+    db = await get_supabase_admin_client()
     user_id = current_user["id"]
 
     attempts = (
-        db.table("test_attempts")
+        await db.table("test_attempts")
         .select(
             "id, test_id, tests(title, exam_type), submitted_at, score, total_questions, accuracy"
         )
@@ -331,34 +351,43 @@ def get_user_attempts(limit: int = 20, current_user: dict = Depends(get_current_
 # POST /questions/{question_id}/report - Report question
 # ═══════════════════════════════════════════════════════════════
 @router.post("/questions/{question_id}/report")
-def report_question(
+async def report_question(
     question_id: UUID, report: QuestionReportRequest, current_user: dict = Depends(get_current_user)
 ):
     """Report a problem with a question"""
-    db = get_supabase_admin_client()
+    db = await get_supabase_admin_client()
     user_id = current_user["id"]
 
     # Get current flag value
-    question = db.table("questions").select("flag").eq("id", str(question_id)).single().execute()
+    question = (
+        await db.table("questions").select("flag").eq("id", str(question_id)).single().execute()
+    )
 
     if not question.data:
         raise HTTPException(status_code=404, detail="Question not found")
 
     # Increment flag count
     current_flags = question.data.get("flag", 0) or 0
-    db.table("questions").update({"flag": current_flags + 1, "flag_reason": report.reason}).eq(
-        "id", str(question_id)
-    ).execute()
+    await (
+        db.table("questions")
+        .update({"flag": current_flags + 1, "flag_reason": report.reason})
+        .eq("id", str(question_id))
+        .execute()
+    )
 
     # Log report
-    db.table("question_reports").insert(
-        {
-            "user_id": user_id,
-            "question_id": str(question_id),
-            "reason": report.reason,
-            "reported_at": datetime.now().isoformat(),
-        }
-    ).execute()
+    await (
+        db.table("question_reports")
+        .insert(
+            {
+                "user_id": user_id,
+                "question_id": str(question_id),
+                "reason": report.reason,
+                "reported_at": datetime.now().isoformat(),
+            }
+        )
+        .execute()
+    )
 
     return {"message": "Question reported successfully"}
 
@@ -368,7 +397,7 @@ def report_question(
 # ═══════════════════════════════════════════════════════════════
 
 
-def update_user_stats(
+async def update_user_stats(
     db,
     user_id: str,
     correct_count: int,
@@ -379,25 +408,29 @@ def update_user_stats(
 ):
     """Update user statistics after test submission"""
     # Get or create user stats
-    stats = db.table("user_stats").select("*").eq("user_id", user_id).maybe_single().execute()
+    stats = await db.table("user_stats").select("*").eq("user_id", user_id).maybe_single().execute()
 
     if not stats:
         # Create new stats
-        db.table("user_stats").insert(
-            {
-                "user_id": user_id,
-                "total_attempts": 1,
-                "total_questions_attempted": total_questions,
-                "total_correct": correct_count,
-                "total_wrong": wrong_count,
-                "overall_accuracy": round((correct_count / total_questions * 100), 2)
-                if total_questions > 0
-                else 0,
-                "best_score": score,
-                "best_test_id": test_id,
-                "last_attempt_at": datetime.now().isoformat(),
-            }
-        ).execute()
+        await (
+            db.table("user_stats")
+            .insert(
+                {
+                    "user_id": user_id,
+                    "total_attempts": 1,
+                    "total_questions_attempted": total_questions,
+                    "total_correct": correct_count,
+                    "total_wrong": wrong_count,
+                    "overall_accuracy": round((correct_count / total_questions * 100), 2)
+                    if total_questions > 0
+                    else 0,
+                    "best_score": score,
+                    "best_test_id": test_id,
+                    "last_attempt_at": datetime.now().isoformat(),
+                }
+            )
+            .execute()
+        )
     else:
         # Update existing stats
         current_stats = stats.data
@@ -412,14 +445,19 @@ def update_user_stats(
             else 0
         )
 
-        db.table("user_stats").update(
-            {
-                "total_attempts": (current_stats.get("total_attempts", 0) or 0) + 1,
-                "total_questions_attempted": new_total_questions,
-                "total_correct": new_total_correct,
-                "total_wrong": new_total_wrong,
-                "overall_accuracy": new_accuracy,
-                "best_score": max(current_stats.get("best_score", 0) or 0, score),
-                "last_attempt_at": datetime.now().isoformat(),
-            }
-        ).eq("user_id", user_id).execute()
+        await (
+            db.table("user_stats")
+            .update(
+                {
+                    "total_attempts": (current_stats.get("total_attempts", 0) or 0) + 1,
+                    "total_questions_attempted": new_total_questions,
+                    "total_correct": new_total_correct,
+                    "total_wrong": new_total_wrong,
+                    "overall_accuracy": new_accuracy,
+                    "best_score": max(current_stats.get("best_score", 0) or 0, score),
+                    "last_attempt_at": datetime.now().isoformat(),
+                }
+            )
+            .eq("user_id", user_id)
+            .execute()
+        )
