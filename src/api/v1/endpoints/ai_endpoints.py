@@ -6,8 +6,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
-from groq.types.chat import ChatCompletionMessageParam
-from postgrest.exceptions import APIError
 
 if TYPE_CHECKING:
     from groq.types.chat import ChatCompletionMessageParam
