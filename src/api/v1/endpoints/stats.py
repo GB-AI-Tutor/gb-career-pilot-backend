@@ -1,4 +1,8 @@
+# filepath: src/api/v1/endpoints/stats.py
+from typing import cast
+
 from fastapi import APIRouter
+from postgrest.types import CountMethod
 
 from src.database.database import get_supabase_admin_client
 
@@ -10,18 +14,36 @@ async def stats():
     db = await get_supabase_admin_client()
 
     universities = await db.table("universities").select("name").execute()
-    uni_names = universities.model_dump()["data"]
+    uni_names = [uni["name"] for uni in universities.data]
+
     programs = await db.table("programs").select("name").execute()
-    programs_name = programs.model_dump()["data"]
-
-    universities_names = []
-
-    for uni in uni_names:
-        universities_names.append(uni["name"])
-
     programs_list = []
-    for pro in programs_name:
-        programs_list.append(pro["name"])
+    for program in programs.data:
+        program_name = program["name"]
+        programs_list.append(program_name)
 
-    programs_list = set(programs_list)
-    return {"Universities": universities_names, "Programs": programs_list}
+    tests = (
+        await db.table("tests")
+        .select(
+            "*",
+            count=cast(CountMethod, "exact"),
+            head=True,
+        )
+        .execute()
+    )
+    questions = (
+        await db.table("questions")
+        .select(
+            "*",
+            count=cast(CountMethod, "exact"),
+            head=True,
+        )
+        .execute()
+    )
+
+    return {
+        "Universities": uni_names,
+        "Programs": programs_list,
+        "total_tests": tests.count if tests.count else 0,
+        "total_questions": questions.count if questions.count else 0,
+    }
