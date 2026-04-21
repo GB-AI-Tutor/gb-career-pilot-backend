@@ -150,10 +150,16 @@ async def log_requests(request: Request, call_next):
 # Origins which are allowed to access backend API
 origins = [
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
     "https://gb-ai-tutor.vercel.app",
     "https://raqeebs.app",
     "https://www.raqeebs.app",
     "https://gb-career-pilot-frontend.vercel.app",
+    "http://localhost:8000/api/v1/stats/stats",
+    "http://localhost:8000/api/v1/*",
+    "http://localhost:8000/*",
 ]
 
 frontend_url = settings.FRONTEND_URL.rstrip("/")
@@ -195,9 +201,9 @@ async def startup_event():
     # Test database connection
     logger.info(" Testing database connection...")
     try:
-        supabase = get_supabase_client()
+        supabase = await get_supabase_client()
         # Quick test query
-        supabase.table("universities").select("id").limit(1).execute()
+        await supabase.table("universities").select("id").limit(1).execute()
         logger.info(" Database connection successful!")
     except Exception as e:
         logger.error(f" Database connection test failed: {e}")
@@ -217,9 +223,9 @@ async def health_check():
 
 
 @app.get("/universities")
-def universites_data():
-    data = get_supabase_client()
-    response = data.table("universities").select("*").execute()
+async def universites_data():
+    data = await get_supabase_client()
+    response = await data.table("universities").select("*").execute()
     universites_data = response.data
 
     return universites_data

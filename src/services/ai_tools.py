@@ -1,6 +1,8 @@
+from groq.types.chat import ChatCompletionToolParam
+
 from src.schemas.universities import UniversitySearchArgs
 
-tools = [
+tools: list[ChatCompletionToolParam] = [
     {
         "type": "function",
         "function": {

@@ -9,11 +9,11 @@ from src.utils.ai_client import client
 logger = logging.getLogger(__name__)
 
 
-def convertion_history(conversation_id: UUID | str, limit_count: int = 15):
-    db = get_supabase_admin_client()
+async def convertion_history(conversation_id: UUID | str, limit_count: int = 15):
+    db = await get_supabase_admin_client()
     conversation_id = str(conversation_id)
     # Pagination is also added to get most recent message not all mesasge history
-    response = (
+    response = await (
         db.table("messages")
         .select("role", "content", "tool_calls", "tool_call_id")
         .eq("conversation_id", conversation_id)
@@ -64,7 +64,7 @@ def convertion_history(conversation_id: UUID | str, limit_count: int = 15):
     return cleaned_history
 
 
-def extract_and_update_memory(
+async def extract_and_update_memory(
     conv_id: UUID | str, recent_messages: list, current_memory: dict, db_client
 ):
     conv_id = str(conv_id)
@@ -140,9 +140,12 @@ def extract_and_update_memory(
         new_memory_json = json.loads(memory_payload)
 
         # 5. Save the updated memory back to Supabase
-        db_client.table("conversations").update({"memory": new_memory_json}).eq(
-            "id", conv_id
-        ).execute()
+        await (
+            db_client.table("conversations")
+            .update({"memory": new_memory_json})
+            .eq("id", conv_id)
+            .execute()
+        )
 
     except Exception as e:
         logger.warning(f"Failed to update memory: {e}")
@@ -175,7 +178,7 @@ def get_counselor_prompt(memory_string: str = "{}") -> dict:
     }
 
 
-def get_extractor_prompt(current_memory_json: str) -> dict:
+async def get_extractor_prompt(current_memory_json: str) -> dict:
     return {
         "role": "system",
         "content": (

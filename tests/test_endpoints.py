@@ -1,7 +1,7 @@
 # API endpoint tests with proper unit and integration test patterns.
 # Unit Tests: Mock the database, test endpoint logic in isolation
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 
@@ -23,8 +23,8 @@ def test_register_new_email_success_unit(student_data, mock_supabase_client_no_e
     - Endpoint should return 200 and send verification email
     """
     with patch(
-        "src.database.database.get_supabase_client",
-        return_value=mock_supabase_client_no_existing_user,
+        "src.api.v1.endpoints.users.database.get_supabase_client",
+        new=AsyncMock(return_value=mock_supabase_client_no_existing_user),
     ), patch("src.api.v1.endpoints.users.send_verification_email") as mock_email:
         response = client.post("/api/v1/users/Registeration", json=student_data)
 
@@ -53,8 +53,8 @@ def test_register_duplicate_email_unit(student_data, mock_supabase_client_existi
     """
     # Patch the database client with our mock
     with patch(
-        "src.database.database.get_supabase_client",
-        return_value=mock_supabase_client_existing_user,
+        "src.api.v1.endpoints.users.database.get_supabase_client",
+        new=AsyncMock(return_value=mock_supabase_client_existing_user),
     ), patch("src.api.v1.endpoints.users.send_verification_email") as mock_email:
         # Try to register with duplicate email
         response = client.post("/api/v1/users/Registeration", json=student_data)
@@ -75,15 +75,16 @@ def test_login_success_unit_test(student_data, mock_supabase_login_success):
     login_payload = {"email": student_data["email"], "password": student_data["password_hash"]}
 
     with patch(
-        "src.database.database.get_supabase_admin_client", return_value=mock_supabase_login_success
+        "src.api.v1.endpoints.auth.database.get_supabase_client",
+        new=AsyncMock(return_value=mock_supabase_login_success),
     ):
         response = client.post("/api/v1/auth/login", json=login_payload)
 
         assert response.status_code == 200
         response_json = response.json()
         assert "access_token" in response_json
-        assert "refresh_token" in response_json
         assert response_json["Token_type"] == "bearer"
+        assert "refresh_token=" in response.headers.get("set-cookie", "")
 
 
 def test_login_wrong_password(student_data, mock_supabase_login_wrong_password):
@@ -95,8 +96,8 @@ def test_login_wrong_password(student_data, mock_supabase_login_wrong_password):
     }
 
     with patch(
-        "src.database.database.get_supabase_admin_client",
-        return_value=mock_supabase_login_wrong_password,
+        "src.api.v1.endpoints.auth.database.get_supabase_client",
+        new=AsyncMock(return_value=mock_supabase_login_wrong_password),
     ):
         response = client.post("/api/v1/auth/login", json=login_payload)
 
@@ -111,8 +112,8 @@ def test_login_noneexistent_user(student_data, mock_supabase_client_no_existing_
     }
 
     with patch(
-        "src.database.database.get_supabase_admin_client",
-        return_value=mock_supabase_client_no_existing_user,
+        "src.api.v1.endpoints.auth.database.get_supabase_client",
+        new=AsyncMock(return_value=mock_supabase_client_no_existing_user),
     ):
         response = client.post("/api/v1/auth/login", json=login_payload)
         if response.status_code == 404:
@@ -154,8 +155,8 @@ def test_update_profile(authenticated_client, student_data, mock_supabase_client
     # authenticated_client handles get_current_user override
     # We also need to mock the database update call
     with patch(
-        "src.database.database.get_supabase_client",
-        return_value=mock_supabase_client_no_existing_user,
+        "src.api.v1.endpoints.users.database.get_supabase_client",
+        new=AsyncMock(return_value=mock_supabase_client_no_existing_user),
     ):
         response = client.put("/api/v1/users/update_user_info", json=update_data)
 

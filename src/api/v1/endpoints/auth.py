@@ -41,9 +41,11 @@ def send_verification_email(receiver_email: str, token: str):
                 "text": f"Welcome! Please click the following link to verify your email:\n\n{verification_link}",
             }
         )
+        return {"message": "Verification email sent successfully."}
     except Exception as e:
         logging.error(f"Failed to send email: {e}")
         raise HTTPException(status_code=500, detail="Failed to send verification mail") from e
+        return {"message": "Verification email sent successfully."}
 
 
 @router.post("/verify")
@@ -86,7 +88,7 @@ async def verify_registration(token: str):
 # Login endpoint
 @router.post("/login")
 @limiter.limit("5/minute")
-async def login_user(request: Request, body: UserLogin, user_record: Response):
+async def login_user(request: Request, body: UserLogin, response: Response):
     client = await database.get_supabase_client()
 
     exist = (
@@ -130,7 +132,8 @@ async def login_user(request: Request, body: UserLogin, user_record: Response):
         .eq("id", user_record["id"])
         .execute()
     )
-    user_record.set_cookie(
+
+    response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,

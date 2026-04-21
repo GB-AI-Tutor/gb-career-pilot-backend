@@ -2,9 +2,12 @@ import json
 import logging
 import re
 import uuid
+from typing import cast
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
+from groq.types.chat import ChatCompletionMessageParam
+from postgrest.exceptions import APIError
 
 from src.api.v1.deps import get_current_user, rate_limiter
 from src.database.database import get_supabase_admin_client
@@ -24,12 +27,12 @@ router = APIRouter()
 
 
 @router.get("/conversations")
-def list_conversations(current_user: dict = Depends(get_current_user)):
-    db = get_supabase_admin_client()
+async def list_conversations(current_user: dict = Depends(get_current_user)):
+    db = await get_supabase_admin_client()
 
     try:
         conv_response = (
-            db.table("conversations")
+            await db.table("conversations")
             .select("id, title, created_at")
             .eq("user_id", current_user["id"])
             .order("created_at", desc=True)
@@ -45,7 +48,7 @@ def list_conversations(current_user: dict = Depends(get_current_user)):
 
         if conv_ids:
             msg_response = (
-                db.table("messages")
+                await db.table("messages")
                 .select("conversation_id, content, created_at")
                 .in_("conversation_id", conv_ids)
                 .order("created_at", desc=True)
@@ -185,13 +188,13 @@ def normalize_search_universities_args(raw_args: dict) -> dict:
 
 
 @router.post("/test-api")
-def test_groq_connection(prompt: str):
+async def test_groq_connection(prompt: str):
     answer = get_basic_completion(prompt)
     return {"AI_reponse": answer}
 
 
 @router.post("/chat")
-def chat(
+async def chat(
     chatlist: ChatRequest,
     background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user),
@@ -215,7 +218,19 @@ def chat(
     **Returns:** StreamingResponse with SSE format
     """
     # raise Exception("This is a fake crash to test my global handler!")
-    db = get_supabase_admin_client()
+    db = await get_supabase_admin_client()
+
+    async def create_conversation_for_user(user_id: str, message_text: str) -> str:
+        title = (message_text[:25] + "...") if len(message_text) > 25 else message_text
+        new_conv = await (
+            db.table("conversations").insert({"user_id": user_id, "title": title}).execute()
+        )
+        if not new_conv.data or not new_conv.data[0].get("id"):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create conversation",
+            )
+        return str(new_conv.data[0]["id"])
 
     # 1. ID Validation & Message Extraction
     conv_id = str(chatlist.conversation_id) if chatlist.conversation_id else None
@@ -226,37 +241,69 @@ def chat(
 
     # 2. Conversation & Memory Setup
     if not conv_id:
-        title = (last_msg[:25] + "...") if len(last_msg) > 25 else last_msg
-        new_conv = (
-            db.table("conversations")
-            .insert({"user_id": current_user["id"], "title": title})
+        conv_id = await create_conversation_for_user(current_user["id"], last_msg)
+    else:
+        conv_data = (
+            await db.table("conversations")
+            .select("id, memory")
+            .eq("id", conv_id)
+            .eq("user_id", current_user["id"])
+            .limit(1)
             .execute()
         )
-        conv_id = new_conv.data[0]["id"]
-    else:
-        conv_data = db.table("conversations").select("memory").eq("id", conv_id).execute()
         if conv_data.data:
             current_memory = conv_data.data[0].get("memory", {})
+        else:
+            logger.warning(
+                "Conversation %s not found for user %s. Creating a new conversation.",
+                conv_id,
+                current_user["id"],
+            )
+            conv_id = await create_conversation_for_user(current_user["id"], last_msg)
+            current_memory = {}
 
     # 3. Dynamic Prompt Injection (Using your new templates!)
     memory_string = json.dumps(current_memory, indent=2, default=str)
     system_prompt = get_counselor_prompt(memory_string)
 
     # 4. Save User Message
-    db.table("messages").insert(
-        {"conversation_id": conv_id, "role": "user", "content": last_msg}
-    ).execute()
+    user_message = {"conversation_id": conv_id, "role": "user", "content": last_msg}
+    try:
+        await db.table("messages").insert(user_message).execute()
+    except APIError as exc:
+        error_code = getattr(exc, "code", None) or (
+            exc.args[0].get("code") if exc.args and isinstance(exc.args[0], dict) else None
+        )
+        if error_code == "23503":
+            logger.warning(
+                "Conversation %s missing during message insert for user %s. Retrying with a new conversation.",
+                conv_id,
+                current_user["id"],
+            )
+            conv_id = await create_conversation_for_user(current_user["id"], last_msg)
+            await (
+                db.table("messages")
+                .insert({"conversation_id": conv_id, "role": "user", "content": last_msg})
+                .execute()
+            )
+        else:
+            raise
 
     # 5. Assemble History
-    previous_conversations = []
-    if conv_id:
-        previous_conversations = convertion_history(conv_id)
 
-    final_history = [system_prompt] + previous_conversations
+    # Ensure this is always a concrete list, not a coroutine
+    previous_conversations: list[dict[str, str]] = (
+        await convertion_history(conv_id, limit_count=15) if conv_id else []
+    )
+
+    final_history: list[dict[str, str]] = [system_prompt] + previous_conversations
 
     # 6. First LLM Call: Decision Phase (Non-streaming to catch tools)
     response = client.chat.completions.create(
-        messages=serialize_messages_for_groq(final_history),  # ← Serialize for Groq
+        messages=cast(
+            list[ChatCompletionMessageParam],
+            serialize_messages_for_groq(final_history),
+        ),
         model="llama-3.1-8b-instant",
         tools=tools,
         tool_choice="auto",
@@ -323,10 +370,12 @@ def chat(
 
     # --- HELPER: Save Final State ---
     # We use this helper inside our generators so we don't repeat code
-    def save_final_state(final_text: str):
-        db.table("messages").insert(
-            {"role": "assistant", "conversation_id": conv_id, "content": final_text}
-        ).execute()
+    async def save_final_state(final_text: str):
+        await (
+            db.table("messages")
+            .insert({"role": "assistant", "conversation_id": conv_id, "content": final_text})
+            .execute()
+        )
 
         # CRITICAL: Sanitize messages before memory extraction
         # Messages in final_history may contain tool_calls without 'type' field
@@ -336,7 +385,7 @@ def chat(
         try:
             # We call this directly instead of using background_tasks because
             # StreamingResponse behaves differently with background tasks.
-            extract_and_update_memory(conv_id, recent_context, current_memory, db)
+            await extract_and_update_memory(conv_id, recent_context, current_memory, db)
         except Exception as e:
             print(f"Memory update failed: {e}")
 
@@ -372,14 +421,18 @@ def chat(
             tool_calls_for_db.append(tc)
 
         # Save Assistant's Request with validated tool_calls
-        db.table("messages").insert(
-            {
-                "conversation_id": conv_id,
-                "role": "assistant",
-                "content": message.content or "",
-                "tool_calls": tool_calls_for_db,
-            }
-        ).execute()
+        await (
+            db.table("messages")
+            .insert(
+                {
+                    "conversation_id": conv_id,
+                    "role": "assistant",
+                    "content": message.content or "",
+                    "tool_calls": tool_calls_for_db,
+                }
+            )
+            .execute()
+        )
 
         for tool_call in tool_calls_for_db:
             raw_args = tool_call["function"].get("arguments") or "{}"
@@ -402,17 +455,21 @@ def chat(
                 tool_result = {"error": f"Unknown tool: {tool_name}"}
 
             # Save Tool's Result & Update History
-            db.table("messages").insert(
-                {
-                    "conversation_id": conv_id,
-                    "role": "tool",
-                    "tool_call_id": tool_call["id"],
-                    "content": json.dumps(tool_result, default=str),
-                }
-            ).execute()
+            await (
+                db.table("messages")
+                .insert(
+                    {
+                        "conversation_id": conv_id,
+                        "role": "tool",
+                        "tool_call_id": tool_call["id"],
+                        "content": json.dumps(tool_result, default=str),
+                    }
+                )
+                .execute()
+            )
 
             # Convert message object to proper dict format before adding to history
-            assistant_message_dict = {
+            assistant_message_dict: dict[str, object] = {
                 "role": "assistant",
                 "content": message.content or "",
             }
@@ -442,7 +499,7 @@ def chat(
             )
 
         # 🌊 GENERATOR A: Tool-Assisted Stream
-        def generate_tool_stream():
+        async def generate_tool_stream():
             try:
                 final_response = client.chat.completions.create(
                     model="llama-3.1-8b-instant",
@@ -458,7 +515,7 @@ def chat(
                         yield sse_data_event(text_chunk)
 
                 try:
-                    save_final_state(full_text)
+                    await save_final_state(full_text)
                 except Exception as e:
                     logger.error(f" Error saving final state in tool stream: {e}", exc_info=True)
                     yield sse_data_event("[ERROR: Failed to save response]")
@@ -472,7 +529,7 @@ def chat(
 
     else:
         # GENERATOR B: Instant Stream (No tools used)
-        def generate_instant_stream():
+        async def generate_instant_stream():
             try:
                 full_text = message.content or ""
                 logger.info(
@@ -482,7 +539,7 @@ def chat(
                 yield sse_data_event(full_text)
 
                 try:
-                    save_final_state(full_text)
+                    await save_final_state(full_text)
                 except Exception as e:
                     logger.error(f" Error saving final state in instant stream: {e}", exc_info=True)
                     yield sse_data_event("[ERROR: Failed to save response]")
