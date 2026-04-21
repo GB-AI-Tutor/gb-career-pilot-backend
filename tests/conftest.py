@@ -4,7 +4,7 @@ Fixtures are reusable test setup functions that pytest automatically injects int
 They reduce code duplication and manage setup/teardown.
 """
 
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -48,8 +48,11 @@ def mock_supabase_client_no_existing_user(mock_supabase_client):
     This is used when testing successful registration (duplicate check should pass).
     """
     # When checking for existing email, return empty data (no user found)
-    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[]
+    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=[])
+    )
+    mock_supabase_client.table.return_value.update.return_value.eq.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=[])
     )
     return mock_supabase_client
 
@@ -61,8 +64,11 @@ def mock_supabase_client_existing_user(mock_supabase_client, student_data):
     This is used when testing duplicate email rejection (should return 409).
     """
     # When checking for existing email, return user data (user already exists)
-    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[{"email": student_data["email"]}]
+    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=[{"email": student_data["email"]}])
+    )
+    mock_supabase_client.table.return_value.update.return_value.eq.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=[])
     )
     return mock_supabase_client
 
@@ -73,15 +79,20 @@ def mock_supabase_login_success(mock_supabase_client, student_data):
 
     hashed_password = get_password_hash(student_data["password_hash"])
 
-    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[
-            {
-                "id": "user-123",
-                "email": student_data["email"],
-                "full_name": student_data["full_name"],
-                "password": hashed_password,
-            }
-        ]
+    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute = AsyncMock(
+        return_value=MagicMock(
+            data=[
+                {
+                    "id": "user-123",
+                    "email": student_data["email"],
+                    "full_name": student_data["full_name"],
+                    "password": hashed_password,
+                }
+            ]
+        )
+    )
+    mock_supabase_client.table.return_value.update.return_value.eq.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=[])
     )
 
     return mock_supabase_client
@@ -93,15 +104,20 @@ def mock_supabase_login_wrong_password(mock_supabase_client, student_data):
 
     hashed_password = get_password_hash("wrong password")
 
-    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[
-            {
-                "id": "user-123",
-                "email": student_data["email"],
-                "full_name": student_data["full_name"],
-                "password": hashed_password,
-            }
-        ]
+    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute = AsyncMock(
+        return_value=MagicMock(
+            data=[
+                {
+                    "id": "user-123",
+                    "email": student_data["email"],
+                    "full_name": student_data["full_name"],
+                    "password": hashed_password,
+                }
+            ]
+        )
+    )
+    mock_supabase_client.table.return_value.update.return_value.eq.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=[])
     )
 
     return mock_supabase_client
@@ -109,32 +125,40 @@ def mock_supabase_login_wrong_password(mock_supabase_client, student_data):
 
 @pytest.fixture
 def mock_supabase_login_user_not_found(mock_supabase_client, student_data):
-    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[]
+    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=[])
+    )
+    mock_supabase_client.table.return_value.update.return_value.eq.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=[])
     )
     return mock_supabase_client
 
 
 @pytest.fixture
 def mock_supabase_get_current_user(mock_supabase_client, student_data):
-    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[{"id": "user_123", **student_data}]
+    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=[{"id": "user_123", **student_data}])
     )
     return mock_supabase_client
 
 
 @pytest.fixture
 def mock_supabase_update_profile(student_data, mock_supabase_client):
-    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[
-            {
-                "full_name": student_data["full_name"],
-                "phone": student_data["phone"],
-                "fsc_percentage": student_data["fsc_percentage"],
-                "city": student_data["city"],
-                "field_of_interest": student_data["field_of_interest"],
-            }
-        ]
+    mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute = AsyncMock(
+        return_value=MagicMock(
+            data=[
+                {
+                    "full_name": student_data["full_name"],
+                    "phone": student_data["phone"],
+                    "fsc_percentage": student_data["fsc_percentage"],
+                    "city": student_data["city"],
+                    "field_of_interest": student_data["field_of_interest"],
+                }
+            ]
+        )
+    )
+    mock_supabase_client.table.return_value.update.return_value.eq.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=[])
     )
     return mock_supabase_client
 

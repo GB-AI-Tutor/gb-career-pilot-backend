@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
@@ -61,32 +61,65 @@ def test_chat_stream():
     mock_response1.choices[0].message.tool_calls = []  # No tool calls
     mock_response1.choices[0].message.content = "Hi there! How can I help you find universities?"
 
-    with patch("src.api.v1.endpoints.ai_endpoints.client") as mock_groq:
-        # Use side_effect to handle multiple calls
-        mock_groq.chat.completions.create.return_value = mock_response1
+    # Mock streaming chunks for the second (stream=True) call
+    stream_chunk = MagicMock()
+    stream_chunk.choices = [MagicMock()]
+    stream_chunk.choices[0].delta.content = "Hi there! How can I help you find universities?"
 
-        response = client.post(
-            "/api/v1/groq/chat", json={"messages": [{"role": "user", "content": "Hi!"}]}
-        )
+    mock_db = MagicMock()
+    mock_db.table.return_value.select.return_value.eq.return_value.eq.return_value.limit.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=[])
+    )
+    mock_db.table.return_value.insert.return_value.execute = AsyncMock(
+        return_value=MagicMock(data=[{"id": "conv-test-1"}])
+    )
 
-        # Verify the response
-        assert response.status_code == 200
-        data = response.json()
+    async def override_get_current_user():
+        return {"id": "user-123", "email": "student2@gmail.com"}
 
-        # Check that content is returned
-        assert "content" in data
-        assert data["content"] == "Hi there! How can I help you find universities?"
+    async def override_rate_limiter():
+        return True
 
-        # Get the arguments used in the call
-        args, kwargs = mock_groq.chat.completions.create.call_args
+    from src.api.v1.deps import get_current_user, rate_limiter
 
-        # 'messages' was passed as a keyword argument
-        sent_messages = kwargs["messages"]
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    app.dependency_overrides[rate_limiter] = override_rate_limiter
 
-        first_message = sent_messages[0]
-        second_message = sent_messages[1]
+    try:
+        with (
+            patch("src.api.v1.endpoints.ai_endpoints.client") as mock_groq,
+            patch(
+                "src.api.v1.endpoints.ai_endpoints.get_supabase_admin_client",
+                new=AsyncMock(return_value=mock_db),
+            ),
+            patch(
+                "src.api.v1.endpoints.ai_endpoints.convertion_history",
+                new=AsyncMock(return_value=[]),
+            ),
+            patch(
+                "src.api.v1.endpoints.ai_endpoints.extract_and_update_memory",
+                new=AsyncMock(return_value=None),
+            ),
+        ):
+            # Use side_effect to handle multiple calls
+            mock_groq.chat.completions.create.side_effect = [mock_response1, [stream_chunk]]
 
-        # Verify system prompt and user message were included
-        assert first_message["role"] == "system"
-        assert second_message["role"] == "user"
-        assert second_message["content"] == "Hi!"
+            response = client.post(
+                "/api/v1/groq/chat", json={"messages": [{"role": "user", "content": "Hi!"}]}
+            )
+
+            # Verify the response
+            assert response.status_code == 200
+            assert response.headers["content-type"].startswith("text/event-stream")
+            assert "data: Hi there! How can I help you find universities?" in response.text
+            assert "[DONE_CONV_ID:" in response.text
+
+            # Get the arguments used in the call
+            _, kwargs = mock_groq.chat.completions.create.call_args_list[0]
+
+            # 'messages' was passed as a keyword argument
+            sent_messages = kwargs["messages"]
+            assert len(sent_messages) >= 1
+            assert sent_messages[0]["role"] == "system"
+    finally:
+        app.dependency_overrides.clear()

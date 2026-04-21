@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
 
@@ -29,9 +29,11 @@ def test_get_me_success():
     mock_response.data = FAKE_USER
 
     mock_client = MagicMock()
-    mock_client.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value = mock_response
+    mock_client.table.return_value.select.return_value.eq.return_value.single.return_value.execute = AsyncMock(
+        return_value=mock_response
+    )
 
-    with patch("src.api.v1.deps.get_supabase_client", return_value=mock_client):
+    with patch("src.api.v1.deps.get_supabase_client", new=AsyncMock(return_value=mock_client)):
         # 3. Hit the protected endpoint
         response = client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {token}"})
 
