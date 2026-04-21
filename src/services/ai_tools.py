@@ -1,4 +1,9 @@
-from groq.types.chat import ChatCompletionToolParam
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from groq.types.chat import ChatCompletionToolParam
+else:
+    ChatCompletionToolParam = dict[str, Any]
 
 from src.schemas.universities import UniversitySearchArgs
 
