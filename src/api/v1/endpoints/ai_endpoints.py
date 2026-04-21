@@ -2,11 +2,18 @@ import json
 import logging
 import re
 import uuid
-from typing import cast
+from typing import TYPE_CHECKING, Any, cast
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from groq.types.chat import ChatCompletionMessageParam
+from postgrest.exceptions import APIError
+
+if TYPE_CHECKING:
+    from groq.types.chat import ChatCompletionMessageParam
+else:
+    ChatCompletionMessageParam = dict[str, Any]
+
 from postgrest.exceptions import APIError
 
 from src.api.v1.deps import get_current_user, rate_limiter
@@ -292,11 +299,11 @@ async def chat(
     # 5. Assemble History
 
     # Ensure this is always a concrete list, not a coroutine
-    previous_conversations: list[dict[str, str]] = (
+    previous_conversations: list[dict[str, object]] = (
         await convertion_history(conv_id, limit_count=15) if conv_id else []
     )
 
-    final_history: list[dict[str, str]] = [system_prompt] + previous_conversations
+    final_history: list[dict[str, object]] = [system_prompt] + previous_conversations
 
     # 6. First LLM Call: Decision Phase (Non-streaming to catch tools)
     response = client.chat.completions.create(
