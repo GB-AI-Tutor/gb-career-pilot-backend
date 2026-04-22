@@ -1,0 +1,221 @@
+.
+├── CODE_OF_CONDUCT.md
+├── CONTRIBUTING.md
+├── database_migrations
+├── DataScraping
+│   ├── Adaptive Web Crawling.md
+│   ├── admission_requirements.csv
+│   ├── adoptive crawling
+│   ├── Akhuwat_NTS_MCQ_Bank.pdf
+│   ├── akhuwat_seed.json
+│   ├── akhuwat_seed.sql
+│   ├── build_karachi_universities.py
+│   ├── cleaing.py
+│   ├── CLEANUP_APPLIED.md
+│   ├── Deep Crawling.md
+│   ├── DEPENDENCY_AUDIT_REPORT.md
+│   ├── extract-data-2026-04-11.csv
+│   ├── firecrawl_programs_raw.json
+│   ├── islamabad_universities.csv
+│   ├── islamabad_universities_page.json
+│   ├── islamabad_universities_raw.json
+│   ├── karachi_universities.csv
+│   ├── Lowered_name.csv
+│   ├── merge_karachi_universities.py
+│   ├── pdf_to_mcq_extractor.py
+│   ├── programs.csv
+│   ├── __pycache__
+│   │   └── merge_karachi_universities.cpython-312.pyc
+│   ├── qs_pk_rankings.md
+│   ├── refresh_karachi_rankings.py
+│   ├── REMOVED_LIBRARIES.md
+│   ├── testing.py
+│   ├── universities.csv
+│   └── update_karachi_hostel_scholarships.py
+├── dockerCommand.txt
+├── Dockerfile
+├── docs
+│   ├── codebase
+│   │   ├── ARCHITECTURE.md
+│   │   ├── CONCERNS.md
+│   │   ├── CONVENTIONS.md
+│   │   ├── INTEGRATIONS.md
+│   │   ├── STACK.md
+│   │   ├── STRUCTURE.md
+│   │   └── TESTING.md
+│   └── superpowers
+│       ├── plans
+│       │   └── 2026-04-21-iba-incremental-scraper.md
+│       └── specs
+│           └── 2026-04-21-iba-incremental-crawler-design.md
+├── environment_setup.sh
+├── Errors
+│   └── path_errors.txt
+├── LICENSE.md
+├── logs
+│   ├── app_2026-03-22.log
+│   ├── app_2026-03-23.log
+│   ├── app_2026-03-24.log
+│   ├── app_2026-03-26.log
+│   ├── app_2026-03-27.log
+│   ├── app_2026-03-28.log
+│   ├── app_2026-03-29.log
+│   ├── app_2026-04-03.log
+│   ├── app_2026-04-14.log
+│   ├── app_2026-04-21.2026-04-21_19-54-36_141945.log
+│   ├── app_2026-04-21.2026-04-21_19-54-47_000609.log
+│   ├── app_2026-04-21.2026-04-21_19-54-47_003152.log
+│   ├── app_2026-04-21.2026-04-21_23-28-32_544179.log
+│   ├── app_2026-04-21.log
+│   └── app_2026-04-22.log
+├── __pycache__
+│   ├── build_karachi_universities.cpython-312.pyc
+│   └── merge_karachi_universities.cpython-312.pyc
+├── pyproject.toml
+├── README.md
+├── requirements.txt
+├── ruff.toml
+├── scr.txt
+├── SECURITY.md
+├── src
+│   ├── api
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   └── __init__.cpython-312.pyc
+│   │   ├── v1
+│   │   │   ├── deps.py
+│   │   │   ├── endpoints
+│   │   │   │   ├── ai_endpoints.py
+│   │   │   │   ├── auth.py
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── __pycache__
+│   │   │   │   │   ├── ai.cpython-312.pyc
+│   │   │   │   │   ├── ai_endpoints.cpython-312.pyc
+│   │   │   │   │   ├── auth.cpython-312.pyc
+│   │   │   │   │   ├── __init__.cpython-312.pyc
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── report_issues.cpython-312.pyc
+│   │   │   │   │   ├── stats.cpython-312.pyc
+│   │   │   │   │   ├── test_endpoints.cpython-312.pyc
+│   │   │   │   │   ├── test_endpoints.cpython-312-pytest-9.0.2.pyc
+│   │   │   │   │   ├── universities.cpython-312.pyc
+│   │   │   │   │   └── users.cpython-312.pyc
+│   │   │   │   ├── report_issues.py
+│   │   │   │   ├── stats.py
+│   │   │   │   ├── test_endpoints.py
+│   │   │   │   ├── universities.py
+│   │   │   │   └── users.py
+│   │   │   ├── __init__.py
+│   │   │   ├── __pycache__
+│   │   │   │   ├── deps.cpython-312.pyc
+│   │   │   │   ├── __init__.cpython-312.pyc
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── router.cpython-312.pyc
+│   │   │   │   └── users.cpython-312.pyc
+│   │   │   └── router.py
+│   │   └── v2
+│   │       └── __init__.py
+│   ├── cache
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-312.pyc
+│   │   │   └── redis_client.cpython-312.pyc
+│   │   └── redis_client.py
+│   ├── config.py
+│   ├── database
+│   │   ├── database.py
+│   │   ├── database_schema.sql
+│   │   ├── __init__.py
+│   │   ├── issues.sql
+│   │   ├── __pycache__
+│   │   │   ├── database.cpython-312.pyc
+│   │   │   ├── __init__.cpython-312.pyc
+│   │   │   └── __init__.py
+│   │   ├── RECOMMENDATION_TABLES.sql
+│   │   └── test_tables.sql
+│   ├── exceptions.py
+│   ├── import_test_data.py
+│   ├── __init__.py
+│   ├── main.py
+│   ├── __pycache__
+│   │   ├── config.cpython-312.pyc
+│   │   ├── import_test_data.cpython-312.pyc
+│   │   ├── __init__.cpython-312.pyc
+│   │   ├── __init__.py
+│   │   ├── main.cpython-312.pyc
+│   │   ├── rate_limiter.cpython-312.pyc
+│   │   └── test_sample.cpython-312-pytest-8.0.2.pyc
+│   ├── rate_limiter.py
+│   ├── schemas
+│   │   ├── ai_schemas.py
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── ai_schemas.cpython-312.pyc
+│   │   │   ├── __init__.cpython-312.pyc
+│   │   │   ├── __init__.py
+│   │   │   ├── report_issues.cpython-312.pyc
+│   │   │   ├── test_schema.cpython-312.pyc
+│   │   │   ├── test_schema.cpython-312-pytest-9.0.2.pyc
+│   │   │   ├── universities.cpython-312.pyc
+│   │   │   └── users.cpython-312.pyc
+│   │   ├── report_issues.py
+│   │   ├── test.py
+│   │   ├── test_schema.py
+│   │   ├── universities.py
+│   │   └── users.py
+│   ├── services
+│   │   ├── ai_tools.py
+│   │   ├── brave_search_service.py
+│   │   ├── coversation_history.py
+│   │   ├── __pycache__
+│   │   │   ├── ai_tools.cpython-312.pyc
+│   │   │   ├── brave_search_service.cpython-312.pyc
+│   │   │   ├── coversation_history.cpython-312.pyc
+│   │   │   └── university_service.cpython-312.pyc
+│   │   └── university_service.py
+│   ├── src.txt
+│   ├── supabase
+│   │   ├── __init__.py
+│   │   ├── migrations
+│   │   │   ├── create_user_table.sql
+│   │   │   └── __init__.py
+│   │   └── __pycache__
+│   │       └── __init__.cpython-312.pyc
+│   ├── test_sample.py
+│   └── utils
+│       ├── ai_client.py
+│       ├── ai_tools.json
+│       ├── __init__.py
+│       ├── __pycache__
+│       │   ├── ai_client.cpython-312.pyc
+│       │   ├── __init__.cpython-312.pyc
+│       │   ├── __init__.py
+│       │   └── security.cpython-312.pyc
+│       └── security.py
+├── structure.txt
+├── tests
+│   ├── conftest.py
+│   ├── __pycache__
+│   │   ├── conftest.cpython-312-pytest-8.0.2.pyc
+│   │   ├── conftest.cpython-312-pytest-9.0.2.pyc
+│   │   ├── test_ai.cpython-312-pytest-8.0.2.pyc
+│   │   ├── test_ai.cpython-312-pytest-9.0.2.pyc
+│   │   ├── test_endpoints.cpython-312-pytest-8.0.2.pyc
+│   │   ├── test_endpoints.cpython-312-pytest-9.0.2.pyc
+│   │   ├── test_integration.cpython-312-pytest-8.0.2.pyc
+│   │   ├── test_integration.cpython-312-pytest-9.0.2.pyc
+│   │   ├── test_main.cpython-312-pytest-8.0.2.pyc
+│   │   ├── test_merge_karachi_universities.cpython-312-pytest-9.0.2.pyc
+│   │   ├── test_report_issues.cpython-312-pytest-9.0.2.pyc
+│   │   ├── test_sample.cpython-312-pytest-8.0.2.pyc
+│   │   ├── test_security.cpython-312-pytest-8.0.2.pyc
+│   │   └── test_security.cpython-312-pytest-9.0.2.pyc
+│   ├── test_ai.py
+│   ├── test_endpoints.py
+│   ├── test_integration.py
+│   ├── test_merge_karachi_universities.py
+│   ├── test_report_issues.py
+│   └── test_security.py
+└── uv.lock
+
+37 directories, 182 files

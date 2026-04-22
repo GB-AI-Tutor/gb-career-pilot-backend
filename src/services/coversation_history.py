@@ -9,7 +9,7 @@ from src.utils.ai_client import client
 logger = logging.getLogger(__name__)
 
 
-async def convertion_history(conversation_id: UUID | str, limit_count: int = 15):
+async def convertion_history(conversation_id: UUID | str, limit_count: int = 5):
     db = await get_supabase_admin_client()
     conversation_id = str(conversation_id)
     # Pagination is also added to get most recent message not all mesasge history
