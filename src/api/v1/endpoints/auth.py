@@ -111,7 +111,7 @@ async def login_user(request: Request, body: UserLogin, response: Response):
     is_valid = verify_password(body.password, password)
 
     if not is_valid:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=" wrong password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=" wrong password ")
     user_data = {
         "sub": str(user_record["id"]),
         "email": (user_record["email"]),

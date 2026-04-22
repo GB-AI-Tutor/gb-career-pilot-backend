@@ -453,7 +453,7 @@ async def chat(
 
             if tool_name == "search_universities":
                 normalized_args = normalize_search_universities_args(args)
-                tool_result = get_universities_from_db(**normalized_args)
+                tool_result = await get_universities_from_db(**normalized_args)
             elif tool_name == "brave_search":
                 tool_result = brave_search(args.get("query", ""), args.get("count", 5))
             else:

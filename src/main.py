@@ -1,3 +1,4 @@
+import sys
 import time
 
 from fastapi import FastAPI, Request
@@ -41,11 +42,20 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # --- LOGURU CONFIGURATION ---
 # This automatically creates a 'logs' folder and writes to a file.
-# The 'rotation="10 MB"' part ensures the file doesn't get massive and crash your server!
-logger.add("logs/app_{time:YYYY-MM-DD}.log", rotation="10 MB", level="INFO")
+# # The 'rotation="10 MB"' part ensures the file doesn't get massive and crash your server!
+# logger.add("logs/app_{time:YYYY-MM-DD}.log", rotation="10 MB", level="INFO")
 
-# 1. --- LOGGING CONFIGURATION ---
-logger.add("logs/app_{time:YYYY-MM-DD}.log", rotation="10 MB", level="INFO")
+# # 1. --- LOGGING CONFIGURATION ---
+# logger.add("logs/app_{time:YYYY-MM-DD}.log", rotation="10 MB", level="INFO")
+# --- LOGURU CONFIGURATION ---
+# We remove the default handler and add a standard error (sys.stderr) sink.
+# Vercel's read-only environment does not allow creating local log files.
+logger.remove()
+logger.add(
+    sys.stderr,
+    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+    level="INFO",
+)
 
 
 # 2. --- CUSTOM EXCEPTIONS ---
