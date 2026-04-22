@@ -179,9 +179,7 @@ frontend_url = settings.FRONTEND_URL.rstrip("/")
 if frontend_url and frontend_url not in origins:
     origins.append(frontend_url)
 
-VERCEL_PREVIEW_ORIGIN_REGEX = (
-    r"^https://(gb-career-pilot-frontend|gb-ai-tutor)-[a-z0-9-]+\.vercel\.app$"
-)
+VERCEL_PREVIEW_ORIGIN_REGEX = r"^https://(gb-career-pilot-frontend|gb-ai-tutor|gb-career-pilot-backend)-[a-z0-9-]+\.vercel\.app$"
 
 
 # using Middleware
