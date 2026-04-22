@@ -17,6 +17,7 @@ from src.utils.security import (
     create_access_token,
     create_refresh_access_token,
     decode_jwt_token,
+    get_password_hash,
     verify_password,
 )
 
@@ -213,7 +214,7 @@ async def forgot_password(request: Request, body: ForgotPasswordRequest):
 
     try:
         # Supabase automatically generates the secure token and sends the email!
-        db.auth.reset_password_for_email(
+        await db.auth.reset_password_for_email(
             body.email,
             # This is where the student is sent after clicking the link in their email
             {"redirect_to": "http://localhost:5173/update-password"},
@@ -225,3 +226,33 @@ async def forgot_password(request: Request, body: ForgotPasswordRequest):
 
     # We return perfectly secure message no matter what happened above
     return {"Detail": "A reset link has been sent to this email if it exists."}
+
+
+@router.post("/update-password")
+async def update_password(new_password: str, refresh_token: str = Cookie(None)):
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=" No refresh token provided"
+        )
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=" Could not validate the refresh token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(
+            refresh_token, settings.JWT_REFRESH_SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        data = payload.get("user_data")
+        user_id = data.get("sub")
+
+    except JWTError as e:
+        raise credentials_exception from e
+
+    client = await database.get_supabase_client()
+    hashed_password = get_password_hash(new_password)
+
+    await client.table("users").update({"password": hashed_password}).eq("id", user_id).execute()
+
+    return {"Message": "Password updated successfully."}
