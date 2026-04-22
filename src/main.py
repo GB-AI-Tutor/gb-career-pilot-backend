@@ -170,7 +170,10 @@ origins = [
     "https://www.north-stars.app",
     "https://www.raqeebs.app",
     "https://gb-career-pilot-frontend.vercel.app",
-    "http://localhost:8000",
+    "http://localhost:8000/api/v1/stats/stats",
+    "http://localhost:8000/api/v1/*",
+    "http://localhost:8000/*",
+    "https://gb-career-pilot-backend.vercel.app/*",
 ]
 
 frontend_url = settings.FRONTEND_URL.rstrip("/")
