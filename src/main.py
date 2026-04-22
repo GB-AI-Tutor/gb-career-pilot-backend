@@ -158,6 +158,7 @@ async def log_requests(request: Request, call_next):
 
 
 # Origins which are allowed to access backend API
+# Origins which are allowed to access backend API
 origins = [
     "http://localhost:5174",
     "http://localhost:5173",
@@ -165,14 +166,11 @@ origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://gb-ai-tutor.vercel.app",
-    "https://north-stars.app/*",
-    "https://www.north-stars.app/*",
+    "https://north-stars.app",
+    "https://www.north-stars.app",
     "https://www.raqeebs.app",
     "https://gb-career-pilot-frontend.vercel.app",
-    "http://localhost:8000/api/v1/stats/stats",
-    "http://localhost:8000/api/v1/*",
-    "http://localhost:8000/*",
-    "https://gb-career-pilot-backend.vercel.app/*",
+    "http://localhost:8000",
 ]
 
 frontend_url = settings.FRONTEND_URL.rstrip("/")
