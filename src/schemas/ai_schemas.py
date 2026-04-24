@@ -1,13 +1,14 @@
 from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class MessageRole(str, Enum):
     USER = "user"
     SYSTEM = "system"
     ASSISTANT = "assistant"
+    TOOL = "tool"
 
 
 class ChatMessage(BaseModel):
@@ -15,6 +16,7 @@ class ChatMessage(BaseModel):
     content: str = Field(
         ..., min_length=1, max_length=2000, description="The text content of the message"
     )
+    tool_call_id: str | None = Field(default=None)
 
     @field_validator("content")
     @classmethod
@@ -24,6 +26,21 @@ class ChatMessage(BaseModel):
         if not clean_text:
             raise ValueError("Message cannot be empty or just spaces.")
         return clean_text
+
+    @field_validator("tool_call_id")
+    @classmethod
+    def sanitize_tool_call_id(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+
+        clean_id = v.strip()
+        return clean_id or None
+
+    @model_validator(mode="after")
+    def validate_tool_message_fields(self) -> "ChatMessage":
+        if self.role == MessageRole.TOOL and not self.tool_call_id:
+            raise ValueError("tool_call_id is required when role is 'tool'")
+        return self
 
 
 class ChatRequest(BaseModel):
