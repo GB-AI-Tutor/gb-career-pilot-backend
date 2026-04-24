@@ -170,6 +170,8 @@ origins = [
     "https://www.north-stars.app",
     "https://www.raqeebs.app",
     "https://gb-career-pilot-frontend.vercel.app",
+    "https://gb-career-pilot-frontend.vercel.app",
+    "https://gb-career-pilot-backend.vercel.app",
     "http://localhost:8000",
 ]
 
