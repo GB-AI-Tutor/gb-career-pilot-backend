@@ -368,9 +368,16 @@ async def report_question(
 
     # Increment flag count
     current_flags = question.data.get("flag", 0) or 0
+    # convert current_flags to int if it's not already
+    if isinstance(current_flags, str):
+        try:
+            current_flags = int(current_flags)
+        except ValueError:
+            current_flags = 0
+
     await (
         db.table("questions")
-        .update({"flag": current_flags + 1, "flag_reason": report.reason})
+        .update({"flag": current_flags + 1})
         .eq("id", str(question_id))
         .execute()
     )
@@ -383,7 +390,8 @@ async def report_question(
                 "user_id": user_id,
                 "question_id": str(question_id),
                 "reason": report.reason,
-                "reported_at": datetime.now().isoformat(),
+                "created_at": datetime.now().isoformat(),
+                "status": "pending",
             }
         )
         .execute()

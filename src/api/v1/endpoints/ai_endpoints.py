@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 else:
     ChatCompletionMessageParam = dict[str, Any]
 
+import groq as groq_sdk
 from postgrest.exceptions import APIError
 
 from src.api.v1.deps import get_current_user, rate_limiter
@@ -86,6 +87,49 @@ async def list_conversations(current_user: dict = Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to load conversations",
+        ) from e
+
+
+@router.get("/conversations/{conv_id}")
+async def get_conversation(conv_id: str, current_user: dict = Depends(get_current_user)):
+    db = await get_supabase_admin_client()
+    try:
+        conv_response = (
+            await db.table("conversations")
+            .select("id, title, created_at")
+            .eq("id", conv_id)
+            .eq("user_id", current_user["id"])
+            .limit(1)
+            .execute()
+        )
+
+        conversation = conv_response.data[0] if conv_response.data else None
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        messages_response = (
+            await db.table("messages")
+            .select("role, content, tool_calls, tool_call_id, created_at")
+            .eq("conversation_id", conv_id)
+            .order("created_at", desc=False)
+            .execute()
+        )
+
+        messages = messages_response.data or []
+        return {
+            "conversation": {
+                "id": conversation["id"],
+                "title": conversation.get("title") or "Conversation",
+                "created_at": conversation.get("created_at"),
+                "messages": messages,
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to fetch conversation {conv_id} for user {current_user['id']}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load conversation",
         ) from e
 
 
@@ -298,26 +342,55 @@ async def chat(
 
     # Ensure this is always a concrete list, not a coroutine
     previous_conversations: list[dict[str, object]] = (
-        await convertion_history(conv_id, limit_count=15) if conv_id else []
+        await convertion_history(conv_id, limit_count=5) if conv_id else []
     )
 
     final_history: list[dict[str, object]] = [system_prompt] + previous_conversations
-
     # 6. First LLM Call: Decision Phase (Non-streaming to catch tools)
-    response = client.chat.completions.create(
-        messages=cast(
-            list[ChatCompletionMessageParam],
-            serialize_messages_for_groq(final_history),
-        ),
-        model="llama-3.1-8b-instant",
-        tools=tools,
-        tool_choice="auto",
-        stream=False,
-        max_tokens=2048,  # Prevent truncation - Groq default might be low
-    )
+    try:
+        response = client.chat.completions.create(
+            messages=cast(
+                list[ChatCompletionMessageParam],
+                serialize_messages_for_groq(final_history),
+            ),
+            model="llama-3.1-8b-instant",
+            tools=tools,
+            tool_choice="auto",
+            stream=False,
+            max_tokens=2048,
+            temperature=0.1,
+        )
+    except groq_sdk.BadRequestError as e:
+        err_str = str(e).lower()
+        if "context_length_exceeded" in err_str or "maximum context length" in err_str:
+            logger.warning(f"Token limit hit on first LLM call for conv {conv_id}: {e}")
+
+            async def _limit_stream():
+                yield sse_data_event("[TOKEN_LIMIT_EXCEEDED]")
+                yield sse_data_event(f"[DONE_CONV_ID:{conv_id}]")
+
+            return StreamingResponse(_limit_stream(), media_type="text/event-stream")
+
+        if "tool_use_failed" in err_str or "failed_generation" in err_str:
+            logger.warning(f"Malformed tool call from model, retrying without tools: {e}")
+            # Retry once without tools so user still gets an answer
+            response = client.chat.completions.create(
+                messages=cast(
+                    list[ChatCompletionMessageParam],
+                    serialize_messages_for_groq(final_history),
+                ),
+                model="llama-3.1-8b-instant",
+                stream=False,
+                max_tokens=2048,
+                temperature=0.1,
+                # No tools — forces a plain text response
+            )
+        else:
+            raise
+        raise  # re-raise anything else (auth errors, etc.)
+
     message = response.choices[0].message
     content_text = message.content or ""
-
     logger.info(
         f" First LLM Response - Tool Calls: {bool(message.tool_calls)}, Content Length: {len(content_text)}, Content: {content_text[:100]}"
     )
@@ -327,11 +400,16 @@ async def chat(
         # Support both formats:
         # 1) <function=search_universities>{...}</function>
         # 2) <function/search_universities>{...}</function>
+        # Existing patterns (keep these)
         equals_pattern = r"<\s*function\s*=\s*([^>]+)>(.*?)</\s*function\s*>"
         slash_pattern = r"<\s*function\s*/\s*([^>\s]+)\s*>(.*?)</\s*function\s*>"
 
+        # Add this — handles <function=name>{...} with NO closing tag
+        no_close_pattern = r"<\s*function\s*=\s*([^>]+)>(\{.*?\})\s*$"
+
         matches = re.findall(equals_pattern, content_text, re.DOTALL)
         matches.extend(re.findall(slash_pattern, content_text, re.DOTALL))
+        matches.extend(re.findall(no_close_pattern, content_text, re.DOTALL | re.MULTILINE))
 
         if matches:
             logger.info(f"Hallucination detected: {len(matches)} function call(s)")
@@ -355,8 +433,10 @@ async def chat(
 
             # Strip ALL function call patterns from content to prevent leaking to frontend
             cleaned_content = re.sub(equals_pattern, "", content_text, flags=re.DOTALL)
-            cleaned_content = re.sub(slash_pattern, "", cleaned_content, flags=re.DOTALL).strip()
-
+            cleaned_content = re.sub(slash_pattern, "", cleaned_content, flags=re.DOTALL)
+            cleaned_content = re.sub(
+                no_close_pattern, "", cleaned_content, flags=re.DOTALL | re.MULTILINE
+            ).strip()
             message.tool_calls = mock_tool_calls
             message.content = cleaned_content if cleaned_content else None
             logger.info(f"✅ Converted to {len(mock_tool_calls)} tool call(s). Content cleaned.")
@@ -426,18 +506,24 @@ async def chat(
             tool_calls_for_db.append(tc)
 
         # Save Assistant's Request with validated tool_calls
-        await (
-            db.table("messages")
-            .insert(
-                {
-                    "conversation_id": conv_id,
-                    "role": "assistant",
-                    "content": message.content or "",
-                    "tool_calls": tool_calls_for_db,
-                }
+        # Only save the assistant decision message if it has displayable content
+        if message.content and message.content.strip():
+            await (
+                db.table("messages")
+                .insert(
+                    {
+                        "conversation_id": conv_id,
+                        "role": "assistant",
+                        "content": message.content,
+                        "tool_calls": tool_calls_for_db,
+                    }
+                )
+                .execute()
             )
-            .execute()
-        )
+        else:
+            # Tool-call-only turn — don't persist the empty shell to DB
+            # The tool result message below is enough for conversation history
+            pass
 
         for tool_call in tool_calls_for_db:
             raw_args = tool_call["function"].get("arguments") or "{}"
@@ -504,13 +590,38 @@ async def chat(
             )
 
         # 🌊 GENERATOR A: Tool-Assisted Stream
+        # #async def generate_tool_stream():
+        #     try:
+        #         final_response = client.chat.completions.create(
+        #             model="llama-3.1-8b-instant",
+        #             messages=serialize_messages_for_groq(final_history),  # ← Serialize for Groq
+        #             stream=True,  # Turn on streaming!
+        #             max_tokens=2048,  # Prevent truncation
+        #         )
+        #         full_text = ""
+        #         for chunk in final_response:
+        #             if chunk.choices[0].delta.content is not None:
+        #                 text_chunk = chunk.choices[0].delta.content
+        #                 full_text += text_chunk
+        #                 yield sse_data_event(text_chunk)
+
+        #         try:
+        #             await save_final_state(full_text)
+        #         except Exception as e:
+        #             logger.error(f" Error saving final state in tool stream: {e}", exc_info=True)
+        #             yield sse_data_event("[ERROR: Failed to save response]")
+
+        #         yield sse_data_event(f"[DONE_CONV_ID:{conv_id}]")
+        #     except Exception as e:
+        #         logger.error(f" Error in tool stream generation: {e}", exc_info=True)
+        #         yield sse_data_event(f"[ERROR: {str(e)}]")
         async def generate_tool_stream():
             try:
                 final_response = client.chat.completions.create(
                     model="llama-3.1-8b-instant",
-                    messages=serialize_messages_for_groq(final_history),  # ← Serialize for Groq
-                    stream=True,  # Turn on streaming!
-                    max_tokens=2048,  # Prevent truncation
+                    messages=serialize_messages_for_groq(final_history),
+                    stream=True,
+                    max_tokens=2048,
                 )
                 full_text = ""
                 for chunk in final_response:
@@ -522,36 +633,92 @@ async def chat(
                 try:
                     await save_final_state(full_text)
                 except Exception as e:
-                    logger.error(f" Error saving final state in tool stream: {e}", exc_info=True)
+                    logger.error(f"Error saving final state in tool stream: {e}", exc_info=True)
                     yield sse_data_event("[ERROR: Failed to save response]")
 
                 yield sse_data_event(f"[DONE_CONV_ID:{conv_id}]")
+
+            except groq_sdk.BadRequestError as e:
+                # Groq raises this when context window is exhausted
+                err_str = str(e).lower()
+                if "context_length_exceeded" in err_str or "maximum context length" in err_str:
+                    logger.warning(f"Token limit hit in tool stream for conv {conv_id}: {e}")
+                    yield sse_data_event("[TOKEN_LIMIT_EXCEEDED]")
+                    yield sse_data_event(f"[DONE_CONV_ID:{conv_id}]")
+                else:
+                    logger.error(f"Groq BadRequestError in tool stream: {e}", exc_info=True)
+                    yield sse_data_event(f"[ERROR: {str(e)}]")
+
             except Exception as e:
-                logger.error(f" Error in tool stream generation: {e}", exc_info=True)
+                logger.error(f"Error in tool stream generation: {e}", exc_info=True)
                 yield sse_data_event(f"[ERROR: {str(e)}]")
 
         return StreamingResponse(generate_tool_stream(), media_type="text/event-stream")
 
     else:
-        # GENERATOR B: Instant Stream (No tools used)
+
         async def generate_instant_stream():
             try:
                 full_text = message.content or ""
                 logger.info(
-                    f" Instant stream - No tools triggered. Returning {len(full_text)} chars"
+                    f"Instant stream - No tools triggered. Returning {len(full_text)} chars"
                 )
-                # Yield the whole text at once, but in the SSE format the frontend expects
                 yield sse_data_event(full_text)
 
                 try:
                     await save_final_state(full_text)
                 except Exception as e:
-                    logger.error(f" Error saving final state in instant stream: {e}", exc_info=True)
+                    logger.error(f"Error saving final state in instant stream: {e}", exc_info=True)
                     yield sse_data_event("[ERROR: Failed to save response]")
 
                 yield sse_data_event(f"[DONE_CONV_ID:{conv_id}]")
+
+            except groq_sdk.BadRequestError as e:
+                err_str = str(e).lower()
+                if "context_length_exceeded" in err_str or "maximum context length" in err_str:
+                    logger.warning(f"Token limit hit in instant stream for conv {conv_id}: {e}")
+                    yield sse_data_event("[TOKEN_LIMIT_EXCEEDED]")
+                    yield sse_data_event(f"[DONE_CONV_ID:{conv_id}]")
+                else:
+                    logger.error(f"Groq BadRequestError in instant stream: {e}", exc_info=True)
+                    yield sse_data_event(f"[ERROR: {str(e)}]")
+
             except Exception as e:
-                logger.error(f" Error in instant stream generation: {e}", exc_info=True)
+                logger.error(f"Error in instant stream generation: {e}", exc_info=True)
                 yield sse_data_event(f"[ERROR: {str(e)}]")
 
-        return StreamingResponse(generate_instant_stream(), media_type="text/event-stream")
+                # GENERATOR B: Instant Stream (No tools used)
+                # async def generate_instant_stream():
+                #     try:
+                #         full_text = message.content or ""
+                #         logger.info(
+                #             f" Instant stream - No tools triggered. Returning {len(full_text)} chars"
+                #         )
+                #         # Yield the whole text at once, but in the SSE format the frontend expects
+                #         yield sse_data_event(full_text)
+
+                #         try:
+                #             await save_final_state(full_text)
+                #         except Exception as e:
+                #             logger.error(f" Error saving final state in instant stream: {e}", exc_info=True)
+                #             yield sse_data_event("[ERROR: Failed to save response]")
+
+                #         yield sse_data_event(f"[DONE_CONV_ID:{conv_id}]")
+                #     except Exception as e:
+                #         logger.error(f" Error in instant stream generation: {e}", exc_info=True)
+                #         yield sse_data_event(f"[ERROR: {str(e)}]")
+
+                # return StreamingResponse(generate_instant_stream(), media_type="text/event-stream")
+
+
+@router.post("/delete-conversation")
+async def delete_conversation(conv_id: str, current_user: dict = Depends(get_current_user)):
+    db = await get_supabase_admin_client()
+    await (
+        db.table("conversations")
+        .delete()
+        .eq("id", conv_id)
+        .eq("user_id", current_user["id"])
+        .execute()
+    )
+    return {"Message": " Conversation deleted successfully."}
