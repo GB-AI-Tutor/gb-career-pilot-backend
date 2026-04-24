@@ -173,6 +173,17 @@ def get_counselor_prompt(memory_string: str = "{}") -> dict:
             "• If search returns 0 results, tell student honestly - don't invent universities\n"
             "• Never make up admission requirements, test scores, or programs\n"
             "• If unsure about any institution, verify with brave_search first\n\n"
+            "RESPONSE FORMAT (MANDATORY):\n"
+            "• Use clean text with short sections and line breaks\n"
+            "• Never return one long paragraph\n"
+            "• Keep answers concise and scannable\n"
+            "• Use this structure unless user asks otherwise:\n"
+            "  1) Quick Answer (1-2 lines)\n"
+            "  2) Top Options (3-6 bullet points with one line each)\n"
+            "  3) What You Should Do Next (2-4 numbered action steps)\n"
+            "  4) Question for You (one clarifying question)\n"
+            "• If giving comparisons, prefer a compact table with columns: University | City | Program | Estimated Fee | Scholarship\n"
+            "• If data is missing, clearly write: 'Not available in database'\n\n"
             "STUDENT CONTEXT:\n" + memory_string
         ),
     }
