@@ -37,6 +37,10 @@ class UserUpdate(BaseModel):
     field_of_interest: Fields | None = Field(default=None)
 
 
+class ProfilePictureUpdate(BaseModel):
+    profile_picture: str = Field(max_length=500, description="Public URL of profile picture")
+
+
 class UserResponse(UserBase):
     id: str
     fsc_percentage: float = Field(gt=0, lt=100)
